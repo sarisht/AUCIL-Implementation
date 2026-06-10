@@ -14,8 +14,7 @@ Artifact for **AUCIL: An Inclusion List Design for Rational Parties**.
   Ethereum figures are reproducible offline.
 - `algorithm_explorer.html` — interactive, self-contained explorer for Algorithm 1.
   Open it in any browser.
-- `InclusionList.ipynb` — original exploratory notebook.
-- `Artefact for proofs in AUCIL.pdf` — appendices and proofs (pages 19+ of the paper).
+- `Artifact for proofs in AUCIL.pdf` — appendices and proofs.
 
 ## Setup
 
