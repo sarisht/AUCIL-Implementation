@@ -1,21 +1,8 @@
 #!/usr/bin/env python3
 """
-AUCIL Evaluation Script (optimized)
-===================================
-Regenerates every figure in the AUCIL paper (IEEE S&P 2027 submission)
-in ONE consistent style, using the exact algorithm from the original
-artifact repository (https://anonymous.4open.science/r/Implementation-4CF6).
+Regenerates every figure in the AUCIL paper (IEEE S&P 2027 submission).
 
-This version is numerically identical to the original notebook algorithm
-(verified across thousands of random instances) but is substantially faster:
-  * the inner allocation/bribe loops avoid copy.deepcopy entirely, using
-    cheap numpy / set copies instead (~15x faster bribe computation);
-  * the bribe-vs-fee figures compute only the single targeted transaction's
-    bribe instead of all m transactions (another O(m) factor);
-  * the broadcast-equilibrium solver supports an optional numba speed-up and a
-    tunable grid resolution.
-
-Figures produced (all in Figures/, consistent style):
+Figures produced (all in Figures/):
   FeeBribeCommittee.pdf      - Bribe vs fee, committee size n varied
   FeeBribeILSize.pdf         - Bribe vs fee, input-list size k varied
   FeeBribeMempool.pdf        - Bribe vs fee, fee scaling varied
@@ -76,11 +63,6 @@ REF_KW = dict(color="black", alpha=0.25, linewidth=1)
 # ════════════════════════════════════════════════════════════════
 
 def two_step_transaction_inclusion(n, m, k, Ua, alpha=1):
-    """Algorithm 1: greedy selection (Step 1) + round-robin allocation (Step 2).
-
-    Returns (La, N_t) where La maps party id (1..n) to a set of object indices
-    and N_t[i] is the number of times object i was selected in Step 1.
-    """
     Ua = np.asarray(Ua, dtype=float)
     Us = Ua.copy()
     N = np.zeros(m, dtype=float)
@@ -104,10 +86,6 @@ def two_step_transaction_inclusion(n, m, k, Ua, alpha=1):
 
 
 def calculate_bribes(n, m, k, Ua, La, N_t, alpha=1):
-    """Minimum adversarial bribe to remove EACH transaction from the input lists.
-
-    Deepcopy-free reimplementation; numerically identical to the reference.
-    """
     Ua = np.asarray(Ua, dtype=float)
     party_sets = [set(La[j + 1]) for j in range(n)]
     incList = np.unique([o for s in party_sets for o in s]).astype(int)
@@ -143,12 +121,7 @@ def calculate_bribes(n, m, k, Ua, La, N_t, alpha=1):
 
 
 def calculate_bribe_single(n, m, k, Ua, La, N_t, target, alpha=1):
-    """Bribe to remove a SINGLE target transaction.
 
-    Equivalent to calculate_bribes(...)[target] but avoids computing the
-    bribe for every other transaction -- the only quantity the bribe-vs-fee
-    figures need. Numerically identical to the reference (verified).
-    """
     Ua = np.asarray(Ua, dtype=float)
     party_sets = [La[j + 1] for j in range(n)]
     if not any(target in s for s in party_sets):
@@ -183,13 +156,7 @@ def calculate_bribe_single(n, m, k, Ua, La, N_t, target, alpha=1):
 
 
 def bribe_curve(n, m, k, Ug, x_axis, target=0, gamma=1.0):
-    """Bribe tolerated for `target` as its fee sweeps over x_axis.
 
-    Mutates only the target entry (matching the original notebook's loop) and
-    computes only the target's bribe. `gamma` is the broadcast probability
-    (alpha); pass the self-consistent equilibrium value from
-    solve_equilibrium_gamma() to reflect the paper's gamma<1 model.
-    """
     Ug = np.asarray(Ug, dtype=float).copy()
     y = np.empty_like(x_axis, dtype=float)
     for idx, g in enumerate(x_axis):

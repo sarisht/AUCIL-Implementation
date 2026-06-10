@@ -5,11 +5,10 @@ Artifact for **AUCIL: An Inclusion List Design for Rational Parties**.
 ## Contents
 
 - `simulations.py` — core AUCIL algorithm (input selection, VRF-biased bidding,
-  aggregation, bribe/Input-CR computation) and the parameter-sweep figures
+  aggregation, bribe/Input-CR computation)
   (`FeeBribeCommittee`, `FeeBribeILSize`, `FeeBribeMempool`, `BroadcastEquilibrium`).
 - `ethereum_sim.py` — runs the full AUCIL pipeline on real Ethereum blocks and
   produces the censorship-resistance figures (`EthereumBlockCR`, `EthereumFeeSweep`).
-  Imports `simulations.py` for the verified algorithm.
 - `pinned_blocks.txt` — three committed Ethereum blocks (per-tx tips), so the
   Ethereum figures are reproducible offline.
 - `algorithm_explorer.html` — interactive, self-contained explorer for Algorithm 1.

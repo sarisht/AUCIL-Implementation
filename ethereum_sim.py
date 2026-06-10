@@ -5,20 +5,7 @@ AUCIL on a live Ethereum block
 Fetches the latest Ethereum block, extracts each transaction's priority fee
 (tip), and runs the AUCIL pipeline with the parameters we recommend for
 Ethereum (EIP-7805 scale). It reports the censorship-resistance guarantees in
-ETH and as multiples of the transaction fee, and saves a consistent-style
-figure (Figures/EthereumBlockCR.pdf).
-
-The greedy allocation, bribe, and equilibrium-gamma routines are imported from
-evaluation.py, so the numbers here are produced by the *same* verified code
-that generates the paper's figures.
-
-Data sources (in priority order):
-  1. Public Ethereum JSON-RPC (default; no API key needed).
-        per-tx tip = (effectiveGasPrice - baseFeePerGas) * gasUsed   [in ETH]
-  2. Dune Analytics (use --source dune with DUNE_API_KEY set and a saved query
-        returning one row per transaction of the latest block; see SQL below).
-  3. Synthetic block (--demo or automatic offline fallback): realistic
-        log-normal tips, so the script always runs.
+ETH and as multiples of the transaction fee.
 
 Recommended Ethereum parameters (EIP-7805):
   n  = 16     committee size      (IL_COMMITTEE_SIZE = 2^4)
