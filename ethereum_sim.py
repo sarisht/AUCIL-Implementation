@@ -45,7 +45,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import simulations as ev   # verified algorithm + figure style
+import simulations as ev   # verified algorithm + figure style (sets the LaTeX style)
 
 IMAGES_DIR = "Figures/"
 SERIES_COLORS = ev.SERIES_COLORS

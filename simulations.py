@@ -43,7 +43,7 @@ except Exception:                                   # pragma: no cover
 # ════════════════════════════════════════════════════════════════
 
 IMAGES_DIR = "Figures/"
-USE_TEX = False                 # set True if a LaTeX install is available
+USE_TEX = True                  # set False if no LaTeX install is available
 FIGSIZE = (5, 3)
 FONTSIZE = 12
 
