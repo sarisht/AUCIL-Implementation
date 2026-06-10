@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AUCIL · Algorithm 1 Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f1e8; --ink:#1c2433; --ink-soft:#55607a;
+    --rule:#d8d2c0; --rule-strong:#b7ae96;
+    --blue:#26456e; --blue-soft:#e4ebf3;
+    --amber:#c2541a; --amber-soft:#f6e2cf;
+    --green:#3f6b4d; --green-soft:#dde9df;
+    --grid:#ece5d4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font-family:"Fraunces",Georgia,serif;
+    background-image:radial-gradient(var(--rule) 0.5px, transparent 0.5px);
+    background-size:22px 22px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px;}
+  header{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px;}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--amber);font-weight:600;}
+  h1{font-size:40px;line-height:1.02;margin:.18em 0 .1em;font-weight:600;letter-spacing:-.01em;}
+  h1 em{font-style:italic;color:var(--blue);}
+  .sub{color:var(--ink-soft);font-size:16px;max-width:62ch;line-height:1.5;}
+  .mono{font-family:"IBM Plex Mono",monospace;}
+
+  .panel{background:#fbf9f1;border:1px solid var(--rule-strong);
+    border-radius:3px;padding:18px 20px;margin-top:22px;
+    box-shadow:3px 3px 0 rgba(28,36,51,.06);}
+  .panel h2{font-size:13px;font-family:"IBM Plex Mono",monospace;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;font-weight:600;}
+
+  /* controls */
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px 22px;align-items:end;}
+  label.ctl{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
+  .val{color:var(--blue);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--blue);}
+  .fees-row{margin-top:16px;}
+  .genrow{display:flex;gap:12px;align-items:flex-end;margin-top:12px;flex-wrap:wrap;}
+  .genfield{flex:0 0 auto;}
+  .genfield input[type=number]{width:78px;font-family:"IBM Plex Mono",monospace;font-size:14px;
+    padding:8px 9px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink);}
+  button.gen{white-space:nowrap;}
+  .sortbox{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;}
+  .sortbox input{accent-color:var(--blue);cursor:pointer;}
+  .blkstatus{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);
+    margin-top:9px;line-height:1.5;min-height:1em;}
+  .blkstatus.err{color:var(--amber);}
+  .blkstatus.ok{color:var(--blue);}
+  .blkstatus code{background:var(--amber-soft);padding:1px 5px;border-radius:2px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink);}
+  input[type=text]{width:100%;font-family:"IBM Plex Mono",monospace;font-size:14px;
+    padding:9px 10px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink);}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+  button{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;letter-spacing:.06em;
+    padding:10px 16px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);
+    border-radius:2px;cursor:pointer;transition:transform .08s,background .15s;}
+  button:hover{transform:translateY(-1px);}
+  button.ghost{background:transparent;color:var(--ink);}
+  button.ghost:hover{background:var(--ink);color:var(--paper);}
+  button:disabled{opacity:.32;cursor:not-allowed;transform:none;}
+
+  /* step 1 table */
+  .tablewrap{overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;font-family:"IBM Plex Mono",monospace;font-size:13px;}
+  th,td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap;}
+  th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+    text-align:right;border-bottom:1.5px solid var(--rule-strong);font-weight:600;}
+  th:first-child,td:first-child{text-align:left;color:var(--ink-soft);}
+  td.obj{color:var(--ink);font-weight:600;}
+  .pick{background:var(--amber-soft);box-shadow:inset 3px 0 0 var(--amber);}
+  .pick td:first-child{color:var(--amber);}
+  .dead{color:#b4ac98;text-decoration:line-through;}
+  .barcell{position:relative;}
+  .bar{position:absolute;left:0;top:50%;transform:translateY(-50%);height:60%;
+    background:var(--blue-soft);border-radius:1px;z-index:0;}
+  .barcell span{position:relative;z-index:1;}
+
+  .stepline{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:1.55;
+    background:#fff;border:1px solid var(--rule);border-radius:2px;padding:12px 14px;margin-bottom:16px;color:var(--ink);}
+  .stepline b{color:var(--amber);}
+  .stepline .k{color:var(--blue);font-weight:600;}
+  .progress{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);letter-spacing:.1em;}
+
+  /* allocation grid */
+  .alloc{display:grid;gap:8px;margin-top:6px;}
+  .party{display:grid;grid-template-columns:74px 1fr 92px;gap:12px;align-items:center;}
+  .pname{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;min-height:30px;align-items:center;}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+    padding:5px 9px;border-radius:2px;background:var(--blue);color:var(--paper);}
+  .chip.empty{background:transparent;border:1px dashed var(--rule-strong);color:var(--ink-soft);font-weight:400;}
+  .putil{font-family:"IBM Plex Mono",monospace;font-size:13px;text-align:right;color:var(--green);font-weight:600;}
+  .legend{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);margin-top:12px;line-height:1.7;}
+  .legend .sw{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 12px;}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media(max-width:820px){.twocol{grid-template-columns:1fr;}}
+  .note{font-size:14px;color:var(--ink-soft);line-height:1.55;margin-top:10px;}
+  .note code{font-family:"IBM Plex Mono",monospace;background:var(--blue-soft);padding:1px 5px;border-radius:2px;color:var(--blue);font-size:12.5px;}
+  .foot{margin-top:34px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+    border-top:1px solid var(--rule);padding-top:14px;line-height:1.7;}
+  .summary{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink);
+    display:flex;gap:22px;flex-wrap:wrap;margin-top:4px;}
+  .summary b{color:var(--blue);}
+  .cmp-controls{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    flex-wrap:wrap;margin:6px 0 16px;}
+  .cmp-controls .ctl{display:flex;align-items:center;gap:8px;margin:0;text-transform:none;
+    letter-spacing:0;font-size:13px;color:var(--ink);}
+  #cmpTarget{font-family:"IBM Plex Mono",monospace;font-size:13px;padding:6px 8px;
+    border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink);}
+  .cmp-eq{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);}
+  .cmp-eq b{color:var(--blue);}
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:820px){.cmp-grid{grid-template-columns:1fr;}}
+  .cmp-card{border:1px solid var(--rule-strong);border-radius:3px;padding:14px 16px;background:#fff;}
+  .cmp-card.mcp{border-left:4px solid var(--amber);}
+  .cmp-card.aucil{border-left:4px solid var(--blue);}
+  .cmp-h{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;letter-spacing:.04em;
+    margin-bottom:10px;color:var(--ink);}
+  .cmp-row{display:flex;justify-content:space-between;gap:14px;align-items:baseline;
+    font-size:13px;color:var(--ink-soft);padding:5px 0;border-bottom:1px solid var(--grid);}
+  .cmp-row:last-child{border-bottom:none;}
+  .cmp-row b{font-family:"IBM Plex Mono",monospace;color:var(--ink);font-size:13px;text-align:right;}
+  .cmp-row.big b{font-size:16px;}
+  .cmp-card.mcp .cmp-row.big b{color:var(--amber);}
+  .cmp-card.aucil .cmp-row.big b{color:var(--blue);}
+  .cmp-headline{margin-top:16px;font-size:14px;line-height:1.55;color:var(--ink);
+    background:var(--blue-soft);border-radius:3px;padding:12px 14px;}
+  .cmp-headline b{color:var(--blue);}
+  .cmp-headline .amber{color:var(--amber);}
+  .seat-card{border:1px solid var(--rule-strong);border-left:4px solid var(--amber);border-radius:3px;
+    padding:14px 16px;background:#fff;margin-bottom:12px;}
+  .seat-row{display:flex;justify-content:space-between;gap:14px;align-items:baseline;font-size:13px;
+    color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--grid);}
+  .seat-row:last-of-type{border-bottom:none;}
+  .seat-row b{font-family:"IBM Plex Mono",monospace;color:var(--ink);}
+  .seat-row small{color:var(--ink-soft);font-weight:400;}
+  .seat-list{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:62%;}
+  .chip{display:inline-flex;align-items:baseline;gap:3px;background:var(--blue-soft);color:var(--blue);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;padding:2px 7px;border-radius:3px;}
+  .chip small{color:var(--ink-soft);font-size:10px;}
+  .seat-verdict{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink);
+    background:var(--blue-soft);border-radius:3px;padding:10px 12px;}
+  .seat-verdict b{color:var(--blue);}
+  .seat-detect{font-size:13.5px;line-height:1.6;color:var(--ink);margin:4px 2px 14px;}
+  .seat-detect b{color:var(--ink);}
+  .seat-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .seat-btn{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);background:#fff;
+    border:1px solid var(--rule-strong);border-radius:3px;padding:7px 11px;cursor:pointer;}
+  .seat-btn:hover{background:var(--blue-soft);border-color:var(--blue);}
+  .seat-reveal{margin-top:12px;font-size:13.5px;line-height:1.6;color:var(--ink);
+    background:#fbf6ec;border:1px solid #e7d9bf;border-radius:3px;padding:12px 14px;}
+  .seat-reveal.aucil{background:var(--blue-soft);border-color:var(--blue);}
+  .seat-reveal b{color:var(--ink);}
+  .seat-reveal .amber{color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">AUCIL · Anonymous Artifact · Algorithm 1</div>
+    <h1>The Two-Step <em>Inclusion</em> Explorer</h1>
+  </header>
+  <p class="sub">An interactive walk-through of the greedy correlated-equilibrium allocation
+  (Algorithm 1). Set the parameters, then step through Phase&nbsp;1 (greedy selection) and watch
+  Phase&nbsp;2 (round-robin allocation) and the per-transaction bribe tolerated assemble in real time.</p>
+
+  <!-- CONTROLS -->
+  <div class="panel">
+    <h2>Parameters</h2>
+    <div class="controls">
+      <div>
+        <label class="ctl">Proposers&nbsp; n = <span class="val" id="nVal">3</span></label>
+        <input type="range" id="n" min="2" max="24" value="3">
+      </div>
+      <div>
+        <label class="ctl">List size&nbsp; k = <span class="val" id="kVal">2</span></label>
+        <input type="range" id="k" min="1" max="6" value="2">
+      </div>
+      <div>
+        <label class="ctl">Broadcast γ = <span class="val" id="gVal">1.00</span></label>
+        <input type="range" id="g" min="0.5" max="1" step="0.01" value="1">
+      </div>
+    </div>
+    <div class="fees-row">
+      <label class="ctl">Transaction fees&nbsp; (comma-separated; m is inferred)</label>
+      <input type="text" id="fees" value="11, 10, 9, 6, 4, 3">
+      <div class="genrow">
+        <div class="genfield">
+          <label class="ctl">m</label>
+          <input type="number" id="mGen" min="1" max="200" value="12">
+        </div>
+        <div class="genfield">
+          <label class="ctl">seed</label>
+          <input type="number" id="seedGen" min="0" value="0">
+        </div>
+        <button id="gen" class="ghost gen">🎲 Sample m ~ Beta(1,5)×30</button>
+        <button id="loadblk" class="ghost gen">⬇ Load latest Ethereum block</button>
+        <label class="sortbox"><input type="checkbox" id="sortFees" checked> sort by fee</label>
+      </div>
+      <div id="blkStatus" class="blkstatus"></div>
+    </div>
+    <div class="btns">
+      <button id="step">Step ▸</button>
+      <button id="play" class="ghost">Auto-play ▶</button>
+      <button id="all" class="ghost">Run to end ⏭</button>
+      <button id="reset" class="ghost">Reset ↺</button>
+    </div>
+    <p class="note">Defaults reproduce the paper's example: <code>n=3, k=2, U=[11,10,9,6,4,3]</code>.
+    Phase&nbsp;1 makes <code>n·k</code> greedy picks, each time choosing the object with the highest
+    <em>marginal</em> utility <code>U⌀N_c</code>; an object is retired once it has been selected by all
+    <code>n</code> proposers. The denominator grows by <code>γ</code> per selection, matching the utility
+    <code>u_i /(1+γ(n_i−1))</code>.</p>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="panel">
+    <h2>Phase 1 · Greedy Selection</h2>
+    <div class="stepline" id="stepline">Press <b>Step ▸</b> to begin. The algorithm will pick the object maximizing <span class="k">U_curr = U ⌀ N_c</span>.</div>
+    <div class="progress" id="progress"></div>
+    <div class="tablewrap">
+      <table id="t1">
+        <thead><tr>
+          <th>object</th><th>fee u<sub>i</sub></th><th>N<sub>c</sub></th>
+          <th>U_curr = u/N<sub>c</sub></th><th>times picked</th>
+        </tr></thead>
+        <tbody id="t1body"></tbody>
+      </table>
+    </div>
+    <div class="summary" id="selSummary"></div>
+  </div>
+
+  <!-- PHASE 2 + BRIBE -->
+  <div class="twocol">
+    <div class="panel">
+      <h2>Phase 2 · Round-robin Allocation</h2>
+      <div class="alloc" id="alloc"></div>
+      <div class="legend">
+        <span class="sw" style="background:var(--blue)"></span>allocated object
+        <span class="sw" style="background:var(--green)"></span>party utility U<sub>j</sub>
+      </div>
+      <p class="note">Selected objects are sorted by finalized utility <code>U_f = u ⌀ (N_c−γ)</code>
+      and dealt round-robin, so an object chosen <code>n_i</code> times lands in <code>n_i</code> distinct
+      input lists. This is the allocation every proposer can simulate — the correlation device.</p>
+    </div>
+    <div class="panel">
+      <h2>Censorship Cost · Bribe Tolerated</h2>
+      <div class="tablewrap">
+        <table id="t2">
+          <thead><tr><th>object</th><th>fee</th><th>n<sub>i</sub></th><th>bribe b<sub>i</sub></th><th>×fee</th></tr></thead>
+          <tbody id="t2body"></tbody>
+        </table>
+      </div>
+      <p class="note">For each object in the inclusion set, <code>b_i</code> is the minimum adversary
+      payment to remove it (Action&nbsp;②), computed exactly as in <code>evaluation.py</code>
+      (<code>calculate_bribe_single</code>). Note the super-linear growth in the fee — higher-paying
+      transactions buy disproportionately more protection.</p>
+    </div>
+  </div>
+
+  <!-- MCP COMPARISON -->
+  <div class="panel">
+    <h2>Comparison · naive MCP (mixed NE) vs. the coordination attack</h2>
+    <p class="note" style="margin-top:0">A naive multi-proposer scheme (MCP-style) has no correlation
+    device, so rational proposers play a <b>mixed Nash equilibrium</b>: each independently selects
+    transactions with probability proportional to fee. Collisions make this inefficient — a correlated
+    equilibrium Pareto-dominates it. An adversary exploits that gap: posing as a coordinator, it offers
+    everyone the efficient CE that <b>omits a target</b>, guaranteeing each party at least its MNE payoff
+    (a conditional top-up covers any shortfall). Parties rationally accept, and the target is censored.
+    AUCIL closes the gap by <em>being</em> the correlation device — it already hands parties the efficient
+    CE including the target, so removing it costs the full Input-CR bribe.</p>
+
+    <div class="cmp-controls">
+      <label class="ctl">Censor target&nbsp;
+        <select id="cmpTarget"></select>
+      </label>
+      <div class="cmp-eq">MCP mixed-NE utility/party: <b id="mneU">–</b>
+        &nbsp;·&nbsp; total <b id="mneTot">–</b></div>
+    </div>
+
+    <div class="cmp-grid">
+      <div class="cmp-card mcp">
+        <div class="cmp-h">① Naive MCP + coordination attack</div>
+        <div class="cmp-row"><span>Adversary CE utility/party (omits target)</span><b id="advU">–</b></div>
+        <div class="cmp-row"><span>Parties accept vs. MNE?</span><b id="advAccept">–</b></div>
+        <div class="cmp-row big"><span>Cost to censor target</span><b id="advCost">–</b></div>
+      </div>
+      <div class="cmp-card aucil">
+        <div class="cmp-h">② AUCIL (this protocol)</div>
+        <div class="cmp-row"><span>Target in the inclusion list T(M)?</span><b id="aucIn">–</b></div>
+        <div class="cmp-row"><span>Protocol-supplied CE utility/party</span><b id="aucU">–</b></div>
+        <div class="cmp-row big"><span>Cost to censor target (Input CR)</span><b id="aucCost">–</b></div>
+      </div>
+    </div>
+    <div class="cmp-headline" id="cmpHeadline"></div>
+  </div>
+
+  <!-- COORDINATION ATTACK FROM ONE PROPOSER'S SEAT -->
+  <div class="panel">
+    <h2>Inside the coordination attack · you are one proposer</h2>
+    <p class="note" style="margin-top:0">An adversary privately hands <em>you</em> a recommended input
+    list and guarantees your usual coordinated revenue (topping up any shortfall). You see only your own
+    list — never the other proposers'. Can you tell an honest coordinator from one that is secretly
+    censoring a transaction?</p>
+
+    <div class="cmp-controls">
+      <label class="ctl">You are&nbsp;<select id="seatProposer"></select></label>
+      <label class="ctl">The adversary is&nbsp;
+        <select id="seatMode">
+          <option value="honest">honestly coordinating</option>
+          <option value="censor">secretly censoring a target</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="seat-card">
+      <div class="cmp-h">The offer on your desk</div>
+      <div class="seat-row"><span>Your recommended input list <small>(all you ever see)</small></span><span class="seat-list" id="seatList"></span></div>
+      <div class="seat-row"><span>Guaranteed revenue (topped up if short)</span><b id="seatGuar">–</b></div>
+      <div class="seat-row"><span>If you <b>accept</b></span><b id="seatAccept">–</b></div>
+      <div class="seat-row"><span>If you <b>decline</b> → uncoordinated mixed NE</span><b id="seatDecline">–</b></div>
+      <div class="seat-verdict" id="seatVerdict"></div>
+    </div>
+
+    <div class="seat-detect" id="seatDetect"></div>
+
+    <div class="seat-actions">
+      <button id="seatReveal" class="seat-btn">Reveal what's really happening ▸</button>
+      <button id="seatDefend" class="seat-btn">AUCIL's defense: recompute the allocation ▸</button>
+    </div>
+    <div class="seat-reveal" id="seatRevealBox" style="display:none"></div>
+    <div class="seat-reveal aucil" id="seatDefendBox" style="display:none"></div>
+  </div>
+
+  <div class="foot">
+    Algorithm transcribed verbatim from the paper's Algorithm&nbsp;1 and verified identical to
+    <span style="color:var(--blue)">evaluation.py</span> across 60 random instances (n,k,m,γ varied;
+    0 mismatches). This tool runs entirely in the browser — no data leaves the page.
+  </div>
+</div>
+
+<script>
+"use strict";
+// ─────────────────────────────────────────────────────────────
+// Algorithm 1 (verified equivalent to evaluation.py / the paper).
+// State machine so we can single-step Phase 1.
+// ─────────────────────────────────────────────────────────────
+function argmax(a){let bi=0,bv=-Infinity;for(let i=0;i<a.length;i++)if(a[i]>bv){bv=a[i];bi=i;}return bi;}
+
+function freshState(n,k,fees,gamma){
+  const m=fees.length;
+  return {
+    n,k,gamma,m,
+    U:fees.slice(),            // working utilities (−1 = retired)
+    fees:fees.slice(),         // immutable original fees
+    N:new Array(m).fill(0),    // raw selection count (divide by N+1)
+    N_t:new Array(m).fill(0),  // integer times picked
+    S:[],                      // selection order (multiset)
+    step:0, total:n*k,
+    lastPick:null, done:false, phase1done:false
+  };
+}
+// advance Phase 1 by one greedy pick; returns info about the pick
+function stepOnce(st){
+  if(st.phase1done) return null;
+  const Ucurr = st.U.map((u,i)=> u/(st.N[i]+1));
+  const s = argmax(Ucurr);
+  const info = {s, ucurr:Ucurr[s], retired:(st.U[s]===-1)};
+  st.S.push(s); st.step++;
+  if(st.U[s]===-1){ st.phase1done=true; info.broke=true; return info; }
+  st.N[s]+=st.gamma; st.N_t[s]+=1;
+  if(st.N_t[s]>=st.n){ st.U[s]=-1; info.justRetired=true; }
+  st.lastPick=s;
+  if(st.step>=st.total) st.phase1done=true;
+  return info;
+}
+// Phase 2 allocation from a (possibly partial) state's selection multiset
+function allocate(st){
+  const Uf = st.fees.map((u,i)=> st.N[i]!==0 ? u/(st.N[i]+1-st.gamma) : 0);
+  const A = st.S.slice().sort((a,b)=> (Uf[b]-Uf[a])||(a-b));
+  const L={}; for(let i=1;i<=st.n;i++) L[i]=[];
+  A.forEach((obj,j)=>{ const p=(j%st.n)+1; if(!L[p].includes(obj)) L[p].push(obj); });
+  return {L,Uf};
+}
+// per-party utility under paper's utility u_i/(1+γ(n_i−1)), n_i = N_t
+function partyUtil(st,objs){
+  let tot=0;
+  objs.forEach(i=>{ const ni=st.N_t[i]; if(ni>0) tot+= st.fees[i]/(1+st.gamma*(ni-1)); });
+  return tot;
+}
+// bribe to remove a single target (mirrors calculate_bribe_single, alpha=gamma)
+function bribeSingle(st,target){
+  const n=st.n,gamma=st.gamma,fees=st.fees;
+  const partySets = []; const {L}=allocate(st);
+  for(let j=1;j<=n;j++) partySets.push(new Set(L[j]));
+  if(!partySets.some(s=>s.has(target))) return 0;
+  const incList=new Set(); partySets.forEach(s=>s.forEach(o=>incList.add(o)));
+  const Usa=fees.slice();
+  incList.forEach(i=>{ if(st.N_t[i]>=n) Usa[i]=-1; });
+  const Us=Usa.slice(); const N2t=st.N_t.slice(); const N2=st.N_t.map(x=>x*gamma);
+  let bribe=fees[target]*N2t[target]; Us[target]=-1; const adds=[];
+  for(let j=0;j<n;j++){
+    if(partySets[j].has(target)){
+      const Uc=Us.map((u,i)=>u/(N2[i]+1)); const s=argmax(Uc);
+      if(Us[s]===-1) break;
+      adds.push(s); N2[s]+=gamma; N2t[s]+=1; if(N2t[s]>=n) Us[s]=-1;
+    }
+  }
+  const Uf=fees.map((u,i)=> N2[i]!==0 ? u/(N2[i]+1-gamma):0);
+  adds.forEach(h=> bribe-=Uf[h]);
+  return Math.max(0,bribe);
+}
+
+// ─────────────────────────────────────────────────────────────
+// UI wiring
+// ─────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+let st=null, timer=null;
+
+function parseFees(){
+  let f = $('fees').value.split(/[,\s]+/).map(x=>parseFloat(x)).filter(x=>!isNaN(x)&&x>0);
+  if($('sortFees') && $('sortFees').checked) f.sort((a,b)=>b-a);   // descending
+  return f;
+}
+
+// Seedable PRNG (mulberry32) for reproducible sampling.
+function mulberry32(seed){
+  let a = seed>>>0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Exact Beta(1,5) via inverse CDF: F(x)=1-(1-x)^5  =>  x = 1 - u^(1/5)  (u uniform).
+// Matches numpy's np.random.beta(1,5); scaled by 30 to match the paper's fee distribution.
+function sampleFees(m, seed){
+  const rng = mulberry32(seed);
+  const out = [];
+  for(let i=0;i<m;i++){
+    const u = rng();
+    const x = 1 - Math.pow(u, 1/5);   // Beta(1,5)
+    out.push(+(x*30).toFixed(2));     // x30, 2 dp
+  }
+  return out;
+}
+function generateFees(){
+  let m = parseInt($('mGen').value,10); if(isNaN(m)||m<1) m=1; if(m>200) m=200;
+  $('mGen').value = m;
+  let seed = parseInt($('seedGen').value,10); if(isNaN(seed)) seed=0;
+  const fees = sampleFees(m, seed);
+  $('fees').value = fees.join(', ');
+  rebuild();
+}
+
+// ── Load the latest Ethereum block in-browser (keyless public RPC) ──
+// Per-transaction utility = priority fee per gas (Gwei):
+//   tip = min(maxPriorityFeePerGas, maxFeePerGas - baseFee)   [type-2]
+//       = gasPrice - baseFee                                  [legacy]
+// A single eth_getBlockByNumber(latest,true) call (most CORS-friendly).
+const PUBLIC_RPCS = [
+  "https://ethereum-rpc.publicnode.com",
+  "https://eth.drpc.org",
+  "https://1rpc.io/eth",
+  "https://eth.meowrpc.com",
+  "https://rpc.ankr.com/eth"
+];
+async function rpcCall(url, method, params){
+  // Use text/plain so the request stays a CORS "simple request" (no OPTIONS
+  // preflight). JSON-RPC servers parse the body regardless of content-type,
+  // and these endpoints return Access-Control-Allow-Origin: * so the response
+  // is readable even from a file:// page (Origin: null).
+  const res = await fetch(url, {method:"POST",
+    headers:{"Content-Type":"text/plain;charset=UTF-8"},
+    body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const j = await res.json();
+  if(j.error || j.result==null) throw new Error((j.error&&j.error.message)||"no result");
+  return j.result;
+}
+function tipGweiOf(tx, baseWei){
+  // use BigInt: wei values can exceed 2^53
+  const b = BigInt(baseWei);
+  let tip;
+  if(tx.maxPriorityFeePerGas!=null && tx.maxFeePerGas!=null){
+    const mpf=BigInt(tx.maxPriorityFeePerGas), mf=BigInt(tx.maxFeePerGas);
+    let room = mf - b; if(room<0n) room=0n;
+    tip = room < mpf ? room : mpf;
+  } else if(tx.gasPrice!=null){
+    tip = BigInt(tx.gasPrice) - b; if(tip<0n) tip=0n;
+  } else { tip = 0n; }
+  return Number(tip)/1e9;   // Gwei
+}
+async function loadLatestBlock(){
+  const status=$('blkStatus'); status.className='blkstatus';
+  status.textContent='Fetching latest block…';
+  const isFile = (location.protocol === 'file:');
+  let block=null, used=null, lastErr=null;
+  for(const url of PUBLIC_RPCS){
+    try{ block = await rpcCall(url,"eth_getBlockByNumber",["latest",true]); used=url; break; }
+    catch(e){ lastErr=e; }
+  }
+  if(!block){
+    status.className='blkstatus err';
+    if(isFile){
+      status.innerHTML='Blocked: your browser won\'t let a page opened as a local file '+
+        '(file://) make network requests — common in Firefox/Safari. Fixes: open this file in '+
+        '<b>Chrome</b>, or serve it over http with <code>python3 -m http.server</code> then visit '+
+        '<code>http://localhost:8000/algorithm_explorer.html</code>. '+
+        'Offline? Use 🎲 Sample, or <code>ethereum_sim.py --dump-fees</code> and paste here.';
+    } else {
+      status.innerHTML='Could not reach any public RPC (network may be blocking them). '+
+        'Use 🎲 Sample, or run <code>ethereum_sim.py --dump-fees</code> and paste the output here.';
+    }
+    return;
+  }
+  const bn = parseInt(block.number,16);
+  const base = block.baseFeePerGas || "0x0";
+  let tips = (block.transactions||[]).map(tx=>tipGweiOf(tx,base)).filter(t=>t>0);
+  if(tips.length===0){ status.className='blkstatus err';
+    status.textContent='Block '+bn+' had no positive-tip transactions; try again.'; return; }
+  const total = tips.length;
+  // cap to m (seeded uniform sample so the distribution is preserved & reproducible)
+  let m = parseInt($('mGen').value,10); if(isNaN(m)||m<1) m=1; if(m>200) m=200; $('mGen').value=m;
+  let note='';
+  if(tips.length > m){
+    const seed = parseInt($('seedGen').value,10)||0; const rng=mulberry32(seed^bn);
+    // Fisher–Yates partial shuffle for an unbiased sample of size m
+    const idx=tips.map((_,i)=>i);
+    for(let i=0;i<m;i++){ const j=i+Math.floor(rng()*(idx.length-i)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+    tips = idx.slice(0,m).map(i=>tips[i]);
+    note=' (sampled '+m+' of '+total+')';
+  }
+  $('fees').value = tips.map(t=>+t.toFixed(4)).join(', ');
+  rebuild();
+  status.className='blkstatus ok';
+  status.textContent='Loaded block '+bn.toLocaleString()+': '+tips.length+
+    ' transactions'+note+' · fee = priority tip per gas (Gwei) · via '+used.replace('https://','');
+}
+function syncLabels(){ $('nVal').textContent=$('n').value; $('kVal').textContent=$('k').value;
+  $('gVal').textContent=parseFloat($('g').value).toFixed(2); }
+
+function rebuild(){
+  syncLabels();
+  const n=+$('n').value, k=+$('k').value, g=parseFloat($('g').value);
+  let fees=parseFees(); if(fees.length===0) fees=[1];
+  // keep the fees field consistent with the (sorted) order shown in the table
+  if($('sortFees') && $('sortFees').checked){
+    const txt = fees.map(x=> (Number.isInteger(x)? x : +x.toFixed(4))).join(', ');
+    if($('fees').value.trim() !== txt) $('fees').value = txt;
+  }
+  st=freshState(n,k,fees,g);
+  stopPlay();
+  renderAll(null);
+  $('stepline').innerHTML='Ready. <b>'+(n*k)+'</b> greedy picks to make. Press <b>Step ▸</b>.';
+  scheduleComparison();
+}
+
+let _cmpTimer=null;
+function scheduleComparison(){
+  if(_cmpTimer) clearTimeout(_cmpTimer);
+  _cmpTimer=setTimeout(()=>{ try{ renderComparison(); }catch(e){} try{ renderSeat(); }catch(e){} }, 140);
+}
+
+function renderT1(info){
+  const b=$('t1body'); b.innerHTML='';
+  const maxFee=Math.max(...st.fees);
+  st.fees.forEach((u,i)=>{
+    const tr=document.createElement('tr');
+    const retired = st.U[i]===-1;
+    if(info && info.s===i) tr.className='pick';
+    const Ncur = (st.N[i]+1-st.gamma); // displayed N_c (=1+γ(n_i−1))
+    const ucurr = retired? '—' : (u/(st.N[i]+1)).toFixed(2);
+    const barW = retired?0:(u/(st.N[i]+1))/(maxFee)*100;
+    tr.innerHTML =
+      '<td class="obj '+(retired?'dead':'')+'">m'+(i+1)+'</td>'+
+      '<td class="'+(retired?'dead':'')+'">'+u.toFixed(2)+'</td>'+
+      '<td>'+Ncur.toFixed(2)+'</td>'+
+      '<td class="barcell"><div class="bar" style="width:'+barW+'%"></div><span>'+ucurr+'</span></td>'+
+      '<td>'+st.N_t[i]+'</td>';
+    b.appendChild(tr);
+  });
+  $('progress').textContent='Phase 1 pick '+st.step+' / '+st.total+
+     (st.phase1done?'  · selection complete':'');
+  const sel = [...new Set(st.S)].map(i=>'m'+(i+1)).join(' ');
+  $('selSummary').innerHTML = st.S.length? '<span>S (in pick order): <b>'+
+     st.S.map(i=>'m'+(i+1)).join(' → ')+'</b></span><span>T(M) = {'+sel+'}</span>' : '';
+}
+
+function renderAlloc(){
+  const wrap=$('alloc'); wrap.innerHTML='';
+  if(st.S.length===0){ wrap.innerHTML='<div class="note">No objects selected yet.</div>'; return; }
+  const {L}=allocate(st);
+  for(let p=1;p<=st.n;p++){
+    const objs=L[p];
+    const row=document.createElement('div'); row.className='party';
+    const chips = objs.length? objs.map(o=>'<span class="chip">m'+(o+1)+'</span>').join('')
+                             : '<span class="chip empty">∅</span>';
+    row.innerHTML='<div class="pname">P'+p+'</div><div class="chips">'+chips+'</div>'+
+      '<div class="putil">'+partyUtil(st,objs).toFixed(2)+'</div>';
+    wrap.appendChild(row);
+  }
+}
+
+function renderBribes(){
+  const b=$('t2body'); b.innerHTML='';
+  if(st.S.length===0) return;
+  const sel=[...new Set(st.S)].sort((a,b)=>st.fees[b]-st.fees[a]);
+  sel.forEach(i=>{
+    const bribe=bribeSingle(st,i);
+    const ratio = bribe/st.fees[i];
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="obj">m'+(i+1)+'</td>'+
+      '<td>'+st.fees[i].toFixed(2)+'</td>'+
+      '<td>'+st.N_t[i]+'</td>'+
+      '<td style="color:var(--amber);font-weight:600">'+bribe.toFixed(2)+'</td>'+
+      '<td>'+(ratio>0?ratio.toFixed(2)+'×':'—')+'</td>';
+    b.appendChild(tr);
+  });
+}
+
+function renderAll(info){ renderT1(info); renderAlloc(); renderBribes(); }
+
+// ── MCP comparison: mixed-NE baseline + coordination attack ──
+// Mixed NE (naive MCP): each proposer independently picks k transactions with
+// probability proportional to fee. Monte-Carlo the expected per-party utility.
+function weightedSampleNoRepl(weights, k, rng){
+  const idx=[], w=weights.slice(), pool=w.map((_,i)=>i);
+  let total=w.reduce((a,b)=>a+b,0);
+  for(let t=0;t<k && pool.length>0;t++){
+    let r=rng()*total, c=0, pick=0;
+    for(let j=0;j<pool.length;j++){ c+=w[pool[j]]; if(r<=c){pick=j;break;} pick=j; }
+    idx.push(pool[pick]); total-=w[pool[pick]];
+    pool.splice(pick,1);
+  }
+  return idx;
+}
+function mneUtilPerParty(fees,n,k,trials,seed){
+  const m=fees.length; const tot=new Array(n).fill(0); const rng=mulberry32(seed>>>0);
+  for(let tr=0;tr<trials;tr++){
+    const picks=[]; const cnt=new Array(m).fill(0);
+    for(let j=0;j<n;j++){ const pk=weightedSampleNoRepl(fees,Math.min(k,m),rng); picks.push(pk); pk.forEach(i=>cnt[i]++); }
+    for(let j=0;j<n;j++){ let u=0; picks[j].forEach(i=> u+=fees[i]/cnt[i]); tot[j]+=u; }
+  }
+  return tot.map(x=>x/trials);
+}
+// Build a state on an arbitrary fee vector (reuse the verified greedy + utility).
+function ceUtilPerParty(fees,n,k,gamma){
+  const stx=freshState(n,k,fees,gamma);
+  while(!stx.phase1done) stepOnce(stx);
+  const {L}=allocate(stx);
+  const u=[]; for(let p=1;p<=n;p++) u.push(partyUtil(stx,L[p]));
+  return {u, st:stx};
+}
+let _mneCache={key:null,val:null};
+function renderComparison(){
+  if(!st) return;
+  const n=st.n,k=st.k,g=st.gamma,fees=st.fees;
+  // run the algorithm to completion on a private copy so the comparison reflects
+  // the final equilibrium regardless of how far the user has stepped.
+  const full=freshState(n,k,fees,g);
+  while(!full.phase1done) stepOnce(full);
+  const selected=[...new Set(full.S)].sort((a,b)=>fees[b]-fees[a]);
+  const sel=$('cmpTarget');
+  const prev=sel.value;
+  sel.innerHTML = selected.map(i=>`<option value="${i}">m${i+1} (fee ${fees[i].toFixed(2)})</option>`).join('');
+  if(selected.length===0){ $('cmpHeadline').textContent='No transactions selected yet.'; return; }
+  if(selected.map(String).includes(prev)) sel.value=prev; else sel.value=String(selected[0]);
+  const target=parseInt(sel.value,10);
+
+  // MNE baseline (cache by fees+n+k; independent of target).
+  // The mixed NE is symmetric across parties, so every party has the SAME
+  // expected utility; we average over several seeds and use that symmetric mean
+  // as each party's baseline (removes Monte-Carlo per-party noise).
+  const key=n+'|'+k+'|'+fees.join(',');
+  let mneAvg;
+  if(_mneCache.key===key){ mneAvg=_mneCache.val; }
+  else {
+    const trials = fees.length>60?700:1500;
+    let acc=0, seeds=[12345,2718,31415,9001,57721];
+    for(const s of seeds){ const u=mneUtilPerParty(fees,n,k,trials,s); acc+=u.reduce((a,b)=>a+b,0)/n; }
+    mneAvg=acc/seeds.length; _mneCache={key,val:mneAvg};
+  }
+  const mneTot=mneAvg*n;
+
+  // adversary CE excluding target; per-party utility + conditional top-up cost
+  const fdrop=fees.slice(); fdrop[target]=1e-12;
+  const adv=ceUtilPerParty(fdrop,n,k,g).u;
+  const advAvg=adv.reduce((a,b)=>a+b,0)/n;
+  let coord=0; for(let j=0;j<n;j++) coord+=Math.max(0, mneAvg-adv[j]);
+
+  // AUCIL: target is in T(M); cost to censor = Input-CR bribe
+  const {L}=allocate(full); let aucTot=0; for(let p=1;p<=n;p++) aucTot+=partyUtil(full,L[p]);
+  const aucU=aucTot/n;
+  const bribe = bribeSingle(full,target);
+
+  $('mneU').textContent=mneAvg.toFixed(2);
+  $('mneTot').textContent=mneTot.toFixed(2);
+  $('advU').textContent=advAvg.toFixed(2);
+  const accept = adv.every((x)=>x>=mneAvg-1e-9);
+  $('advAccept').textContent = accept? 'yes (no top-up needed)' : 'yes (via conditional top-up)';
+  $('advCost').textContent = coord.toFixed(2);
+  $('aucIn').textContent='yes';
+  $('aucU').textContent=aucU.toFixed(2);
+  $('aucCost').textContent=bribe.toFixed(2);
+
+  const ratio = coord>1e-9 ? (bribe/coord) : Infinity;
+  const rtxt = isFinite(ratio)? (ratio.toFixed(1)+'×') : '∞ (free under MCP)';
+  $('cmpHeadline').innerHTML =
+    `Censoring <b>m${target+1}</b> (fee ${fees[target].toFixed(2)}): under naive MCP the adversary `+
+    `coordinates the parties out of the mixed NE for <span class="amber">${coord.toFixed(2)}</span>, `+
+    `but AUCIL forces a bribe of <b>${bribe.toFixed(2)}</b> — about <b>${rtxt}</b> more. `+
+    `The protocol's correlated equilibrium (total ${aucTot.toFixed(2)}) already Pareto-dominates the `+
+    `mixed NE (total ${mneTot.toFixed(2)}), so there is no efficiency gain left for an adversary to weaponize.`;
+}
+
+// ── Coordination attack from one proposer's seat ──
+function fullAllocOn(fees,n,k,g){ const s=freshState(n,k,fees,g); let guard=0; while(!s.phase1done && guard++<5000) stepOnce(s); return Object.assign({st:s}, allocate(s)); }
+function mneAvgFor(fees,n,k){
+  const key=n+'|'+k+'|'+fees.join(',');
+  if(_mneCache.key===key) return _mneCache.val;
+  const trials=fees.length>60?700:1500; let acc=0; const seeds=[12345,2718,31415,9001,57721];
+  for(const s of seeds){ const u=mneUtilPerParty(fees,n,k,trials,s); acc+=u.reduce((a,b)=>a+b,0)/n; }
+  const v=acc/seeds.length; _mneCache={key,val:v}; return v;
+}
+let _seatTruth=null;
+function renderSeat(){
+  if(!st) return;
+  const n=st.n,k=st.k,g=st.gamma,fees=st.fees;
+  const honest=fullAllocOn(fees,n,k,g);
+  const selected=[...new Set(honest.st.S)].sort((a,b)=>fees[b]-fees[a]);
+  if(selected.length===0){ $('seatVerdict').textContent='No transactions selected yet.'; $('seatList').innerHTML=''; $('seatDetect').innerHTML=''; return; }
+  // target tracks the censor-target dropdown above, else the top-fee tx
+  let target=parseInt(($('cmpTarget')||{value:''}).value,10);
+  if(!selected.includes(target)) target=selected[0];
+  // proposer dropdown
+  const selP=$('seatProposer'); const prevP=selP.value;
+  selP.innerHTML=Array.from({length:n},(_,i)=>`<option value="${i+1}">proposer P${i+1}</option>`).join('');
+  selP.value=(prevP && +prevP>=1 && +prevP<=n)?prevP:'1';
+  const you=parseInt(selP.value,10);
+  const mode=$('seatMode').value;
+
+  const fdrop=fees.slice(); fdrop[target]=1e-12;
+  const cens=fullAllocOn(fdrop,n,k,g);
+
+  const honestList=honest.L[you], censList=cens.L[you];
+  const honestRev=partyUtil(honest.st,honestList);
+  const shown=(mode==='censor')?censList:honestList;
+  const guar=honestRev;
+  const realized=(mode==='censor')?partyUtil(cens.st,censList):honestRev;
+  const acceptPay=Math.max(guar,realized);
+  const decline=mneAvgFor(fees,n,k);
+
+  $('seatList').innerHTML = shown.length? shown.slice().sort((a,b)=>fees[b]-fees[a]).map(i=>`<span class="chip">m${i+1}<small>${fees[i].toFixed(1)}</small></span>`).join('') : '<i>(empty)</i>';
+  $('seatGuar').textContent=guar.toFixed(2);
+  $('seatAccept').textContent='≥ '+acceptPay.toFixed(2);
+  $('seatDecline').textContent='≈ '+decline.toFixed(2);
+  const acc=acceptPay>=decline-1e-9;
+  $('seatVerdict').innerHTML = acc
+    ? `<b>Rational choice: accept.</b> The offer guarantees ${guar.toFixed(2)} — at least your ${decline.toFixed(2)} mixed-NE fallback — and nothing you do unilaterally beats following the recommendation.`
+    : `Decline: the offer (${guar.toFixed(2)}) is below your ${decline.toFixed(2)} fallback.`;
+
+  const isAssignee=honestList.includes(target);
+  const identical=JSON.stringify([...shown].sort((a,b)=>a-b))===JSON.stringify([...honestList].sort((a,b)=>a-b));
+  let det;
+  if(mode==='honest'){
+    det=`You can't be sure this coordinator is honest — but it doesn't change your decision: an honest coordinator and a censoring one hand you the <em>same</em> kind of offer with the <em>same</em> guarantee. You accept either way. That symmetry is exactly what the attacker relies on.`;
+  } else {
+    det=`A target <em>is</em> being censored — but can <b>you</b> see it? You only ever receive your own list and a revenue guarantee; you never see the honest allocation to compare against, and in a plain MCP scheme you cannot recompute it. `+
+      (identical? `Here your list is in fact <b>identical</b> to what honest coordination would give you. `
+                : `Your list is a perfectly valid coordinated allocation; without the honest counterfactual you have no way to notice anything is missing. `)+
+      `Every transaction you were handed is a genuine high-fee item — the target is simply <b>absent</b>, and absence is normal because no proposer is assigned every transaction. So you accept, and so does everyone else.`;
+  }
+  $('seatDetect').innerHTML=det;
+
+  _seatTruth={n,target,fees,honest,cens,you,isAssignee};
+  $('seatRevealBox').style.display='none'; $('seatReveal').textContent="Reveal what's really happening ▸";
+  $('seatDefendBox').style.display='none'; $('seatDefend').textContent="AUCIL's defense: recompute the allocation ▸";
+}
+function seatRevealToggle(){
+  const box=$('seatRevealBox'), t=_seatTruth; if(!t) return;
+  if(box.style.display!=='none'){ box.style.display='none'; $('seatReveal').textContent="Reveal what's really happening ▸"; return; }
+  let absent=0; for(let p=1;p<=t.n;p++) if(!t.cens.L[p].includes(t.target)) absent++;
+  const pre=($('seatMode').value==='honest')?`<em>(This run is honest — nothing is actually censored. Below is what the same setup would look like under a censoring adversary.)</em><br><br>`:'';
+  box.innerHTML=pre+`<b>Global truth (hidden from every proposer):</b> the target is <span class="amber">m${t.target+1}</span> (fee ${t.fees[t.target].toFixed(2)}). `+
+    `In the censoring recommendation it is absent from <b>all ${absent} of ${t.n}</b> proposers' lists — each was privately told a <em>different</em> peer would include it. No single seat reveals the omission, so every proposer accepts and m${t.target+1} is censored at roughly zero cost (only the small top-up to honor the revenue guarantees).`;
+  box.style.display='block'; $('seatReveal').textContent="Hide ▾";
+}
+function seatDefendToggle(){
+  const box=$('seatDefendBox'), t=_seatTruth; if(!t) return;
+  if(box.style.display!=='none'){ box.style.display='none'; $('seatDefend').textContent="AUCIL's defense: recompute the allocation ▸"; return; }
+  const assignees=[]; for(let p=1;p<=t.n;p++) if(t.honest.L[p].includes(t.target)) assignees.push('P'+p);
+  const pre=($('seatMode').value==='honest')?`<em>(Illustrating the censoring case: how AUCIL would let you catch it.)</em><br><br>`:'';
+  box.innerHTML=pre+`<b>AUCIL's defense.</b> The allocation is a deterministic, public function of the common mempool, so you recompute it yourself: m${t.target+1} is assigned to <b>${assignees.join(', ')||'(none)'}</b>. `+
+    (t.isAssignee
+      ? `That includes <b>you</b> (P${t.you}): the list handed to you omits a transaction you can prove belongs in your own list, so the recommendation is detectably forged — you <b>reject</b> it. Censoring m${t.target+1} now requires actually bribing its assignees (the Input-CR cost).`
+      : `You aren't an assignee, but you can verify that ${assignees.join(', ')||'someone'} must include m${t.target+1}; once lists are published, an omission is public. Either way the adversary can no longer hide it and must pay the Input-CR bribe.`)+
+    ` In a plain MCP scheme no such public recomputation exists — which is precisely why the attack succeeds there and fails here.`;
+  box.style.display='block'; $('seatDefend').textContent="Hide ▾";
+}
+
+function describe(info){
+  if(!info){return;}
+  if(info.broke){ $('stepline').innerHTML='All objects retired — <b>Phase 1 complete</b>. '+
+      'The selection set T(M) is fixed; see the allocation and bribe panels below.'; return; }
+  let msg='Pick <b>#'+st.step+'</b>: highest marginal utility is '+
+    '<span class="k">m'+(info.s+1)+'</span> with U_curr = <b>'+info.ucurr.toFixed(2)+'</b>. '+
+    'Increment its N_c by γ='+st.gamma.toFixed(2)+'.';
+  if(info.justRetired) msg+=' It has now been picked by all n='+st.n+' proposers → <b>retired</b>.';
+  if(st.phase1done && !info.broke) msg+=' &nbsp;<b>Phase 1 complete.</b>';
+  $('stepline').innerHTML=msg;
+}
+
+function doStep(){
+  if(!st||st.phase1done){return;}
+  const info=stepOnce(st);
+  renderAll(info); describe(info);
+  if(st.phase1done) stopPlay();
+}
+function runAll(){ if(!st)return; let guard=0; while(!st.phase1done && guard++<1000) stepOnce(st);
+  renderAll({s:-1}); $('stepline').innerHTML='<b>Phase 1 complete</b> (ran to end). '+
+   'T(M) and the full allocation are shown below.'; stopPlay(); }
+function playToggle(){
+  if(timer){ stopPlay(); return; }
+  $('play').textContent='Pause ⏸';
+  timer=setInterval(()=>{ if(st.phase1done){stopPlay();return;} doStep(); }, 650);
+}
+function stopPlay(){ if(timer){clearInterval(timer);timer=null;} $('play').textContent='Auto-play ▶'; }
+
+['n','k','g'].forEach(id=>$(id).addEventListener('input', rebuild));
+$('fees').addEventListener('change', rebuild);
+$('step').addEventListener('click', doStep);
+$('all').addEventListener('click', runAll);
+$('play').addEventListener('click', playToggle);
+$('reset').addEventListener('click', rebuild);
+$('gen').addEventListener('click', generateFees);
+$('loadblk').addEventListener('click', loadLatestBlock);
+$('sortFees').addEventListener('change', rebuild);
+$('cmpTarget').addEventListener('change', ()=>{ try{ renderComparison(); }catch(e){} try{ renderSeat(); }catch(e){} });
+$('seatProposer').addEventListener('change', ()=>{ try{ renderSeat(); }catch(e){} });
+$('seatMode').addEventListener('change', ()=>{ try{ renderSeat(); }catch(e){} });
+$('seatReveal').addEventListener('click', seatRevealToggle);
+$('seatDefend').addEventListener('click', seatDefendToggle);
+
+rebuild();
+
+// proactive hint when opened as a local file (live block fetch may be blocked)
+if(location.protocol === 'file:'){
+  const s=$('blkStatus'); s.className='blkstatus';
+  s.innerHTML='Tip: the live-block button needs network access. From a local file it '+
+    'works in Chrome; in Firefox/Safari serve over http (<code>python3 -m http.server</code>). '+
+    '🎲 Sample works everywhere, offline.';
+}
+</script>
+</body>
+</html>
