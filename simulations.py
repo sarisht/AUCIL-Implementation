@@ -1,22 +1,4 @@
 #!/usr/bin/env python3
-"""
-Regenerates every figure in the AUCIL paper (IEEE S&P 2027 submission).
-
-Figures produced (all in Figures/):
-  FeeBribeCommittee.pdf      - Bribe vs fee, committee size n varied
-  FeeBribeILSize.pdf         - Bribe vs fee, input-list size k varied
-  FeeBribeMempool.pdf        - Bribe vs fee, fee scaling varied
-  BroadcastEquilibrium.pdf   - Withholding probability vs VRF bias
-
-Requirements:
-  pip install numpy scipy matplotlib            (numba optional)
-  A LaTeX install is needed only if USE_TEX=True (default False for portability).
-
-Usage:
-  python3 evaluation.py                # all four figures
-  python3 evaluation.py --fast         # coarser broadcast grid (quicker)
-  python3 evaluation.py --check        # self-test vs the reference algorithm
-"""
 
 import argparse
 import numpy as np
@@ -24,11 +6,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Optional numba acceleration (falls back gracefully)
 try:
     from numba import jit, prange
     HAVE_NUMBA = True
-except Exception:                                   # pragma: no cover
+except Exception:
     HAVE_NUMBA = False
 
     def jit(*a, **k):
@@ -38,12 +19,8 @@ except Exception:                                   # pragma: no cover
 
     prange = range
 
-# ════════════════════════════════════════════════════════════════
-# Global style - single source of truth for ALL figures
-# ════════════════════════════════════════════════════════════════
-
 IMAGES_DIR = "Figures/"
-USE_TEX = True                  # set False if no LaTeX install is available
+USE_TEX = True
 FIGSIZE = (5, 3)
 FONTSIZE = 12
 
@@ -53,14 +30,8 @@ plt.rcParams.update({
     "font.size": FONTSIZE,
 })
 
-SERIES_COLORS = ["#1f77b4", "#d62728", "#2ca02c"]   # blue, red, green
+SERIES_COLORS = ["#1f77b4", "#d62728", "#2ca02c"]
 REF_KW = dict(color="black", alpha=0.25, linewidth=1)
-
-# ════════════════════════════════════════════════════════════════
-# Core algorithm
-# (Numerically identical to the original artifact's
-#  two_step_transaction_inclusion / calculate_bribes, but deepcopy-free.)
-# ════════════════════════════════════════════════════════════════
 
 def two_step_transaction_inclusion(n, m, k, Ua, alpha=1):
     Ua = np.asarray(Ua, dtype=float)
@@ -84,7 +55,6 @@ def two_step_transaction_inclusion(n, m, k, Ua, alpha=1):
         La[(j % n) + 1].add(obj)
     return La, N_t
 
-
 def calculate_bribes(n, m, k, Ua, La, N_t, alpha=1):
     Ua = np.asarray(Ua, dtype=float)
     party_sets = [set(La[j + 1]) for j in range(n)]
@@ -96,10 +66,10 @@ def calculate_bribes(n, m, k, Ua, La, N_t, alpha=1):
             Usa[i] = -1.0
 
     bribes = np.zeros_like(Ua)
-    for i in incList:                       # np.unique output is already sorted
+    for i in incList:
         Us = Usa.copy()
         N2_t = N_t.copy()
-        N2 = N_t * alpha                    # fresh array (not a view)
+        N2 = N_t * alpha
         bribe = Ua[i] * N2_t[i]
         Us[i] = -1.0
         newadditions = []
@@ -119,9 +89,7 @@ def calculate_bribes(n, m, k, Ua, La, N_t, alpha=1):
         bribes[i] = max(0.0, bribe)
     return bribes
 
-
 def calculate_bribe_single(n, m, k, Ua, La, N_t, target, alpha=1):
-
     Ua = np.asarray(Ua, dtype=float)
     party_sets = [La[j + 1] for j in range(n)]
     if not any(target in s for s in party_sets):
@@ -154,9 +122,7 @@ def calculate_bribe_single(n, m, k, Ua, La, N_t, target, alpha=1):
         bribe -= U_f[h]
     return max(0.0, bribe)
 
-
 def bribe_curve(n, m, k, Ug, x_axis, target=0, gamma=1.0):
-
     Ug = np.asarray(Ug, dtype=float).copy()
     y = np.empty_like(x_axis, dtype=float)
     for idx, g in enumerate(x_axis):
@@ -165,16 +131,10 @@ def bribe_curve(n, m, k, Ug, x_axis, target=0, gamma=1.0):
         y[idx] = calculate_bribe_single(n, m, k, Ug, La, N_t, target, alpha=gamma)
     return y
 
-
-# ════════════════════════════════════════════════════════════════
-# Broadcast-equilibrium solver (numba-accelerated when available)
-# ════════════════════════════════════════════════════════════════
-
 BIAS_MIN = 0.0
 BIAS_MAX = 6.0
 LC = 6000
 _bias_values = np.linspace(BIAS_MIN, BIAS_MAX, LC)
-
 
 @jit(nopython=True)
 def _P_max(eta, p_values, n, bias_values, lc):
@@ -191,7 +151,6 @@ def _P_max(eta, p_values, n, bias_values, lc):
     prob_less = (sum_action_0 + sum_action_1) / lc if lc > 0 else 0.0
     return min(prob_less, 1.0) ** (n - 1)
 
-
 @jit(nopython=True)
 def _direction(bias, p_values, v, a, n, bias_values, lc):
     payoff_0 = v + a * _P_max(bias, p_values, n, bias_values, lc)
@@ -202,7 +161,6 @@ def _direction(bias, p_values, v, a, n, bias_values, lc):
         - ((p_values[idx] - delta) * payoff_1 + (1 - p_values[idx] + delta) * payoff_0)
     return grad
 
-
 @jit(nopython=True)
 def _err(bias, p_values, v, a, n, bias_values, lc):
     payoff_0 = v + a * _P_max(bias, p_values, n, bias_values, lc)
@@ -211,14 +169,12 @@ def _err(bias, p_values, v, a, n, bias_values, lc):
     expected = p_values[idx] * payoff_1 + (1 - p_values[idx]) * payoff_0
     return abs(max(payoff_1, payoff_0) - expected)
 
-
 @jit(nopython=True, parallel=True)
 def _direction_par(bias_values, p_values, v, a, n, lc):
     d = np.empty_like(p_values)
     for i in prange(len(bias_values)):
         d[i] = _direction(bias_values[i], p_values, v, a, n, bias_values, lc)
     return d
-
 
 @jit(nopython=True, parallel=True)
 def _error_par(bias_values, p_values, v, a, n, lc):
@@ -227,10 +183,8 @@ def _error_par(bias_values, p_values, v, a, n, lc):
         e[i] = _err(bias_values[i], p_values, v, a, n, bias_values, lc)
     return np.max(e)
 
-
 def solve_broadcast_equilibrium(v, a, n, bias_values=None, lc=None,
                                 max_iter=100000, tol=1e-4, step=1.0):
-    """Iteratively solve for the mixed-NE withholding probability curve."""
     if bias_values is None:
         bias_values = _bias_values
     if lc is None:
@@ -245,10 +199,7 @@ def solve_broadcast_equilibrium(v, a, n, bias_values=None, lc=None,
                 break
     return p_values
 
-
 def input_list_reward(La, N_t, Ug, gamma, party=1):
-    """Input-list reward for a party under the paper's utility (Eq. 1):
-    u_i / (1 + gamma*(n_i - 1)), summed over the party's allocated objects."""
     tot = 0.0
     for i in La[party]:
         ni = N_t[i]
@@ -256,20 +207,8 @@ def input_list_reward(La, N_t, Ug, gamma, party=1):
             tot += Ug[i] / (1 + gamma * (ni - 1))
     return tot
 
-
 def solve_equilibrium_gamma(n, m, k, Ug, u_agg=None, gamma0=0.95,
                             iters=40, tol=1e-4, lc=800):
-    """Self-consistent broadcast probability gamma.
-
-    gamma is NOT a free parameter: it is the expected fraction of proposers
-    that broadcast at the Phase-II mixed-NE. We solve the fixed point
-
-        gamma -> allocation(gamma) -> v(gamma) -> broadcast-eq -> 1-E[withhold] -> gamma
-
-    by damped iteration. With the paper's parameterization u_agg = sqrt(n)*sigma/n
-    (sigma = sum of fees in T(M)), this converges to gamma in ~0.90-0.95 for
-    EIP-7805-scale committees.
-    """
     Ug = np.asarray(Ug, dtype=float)
     bias_values = np.linspace(BIAS_MIN, BIAS_MAX, lc)
     if u_agg is None:
@@ -280,9 +219,6 @@ def solve_equilibrium_gamma(n, m, k, Ug, u_agg=None, gamma0=0.95,
     for _ in range(iters):
         La, N_t = two_step_transaction_inclusion(n, m, k, Ug, alpha=gamma)
         v = input_list_reward(La, N_t, Ug, gamma)
-        # The withholding equilibrium depends only on the ratio v : u_agg, not the
-        # absolute scale. Normalize payoffs to O(100) so the fixed-step gradient
-        # solver is well-conditioned regardless of fee units (ETH vs abstract).
         s = (v + u_agg) / 200.0
         if s <= 0:
             s = 1.0
@@ -291,7 +227,7 @@ def solve_equilibrium_gamma(n, m, k, Ug, u_agg=None, gamma0=0.95,
         gamma_new = 1.0 - float(np.mean(p))
         if abs(gamma_new - gamma) < tol:
             return gamma_new
-        gamma = 0.5 * gamma + 0.5 * gamma_new      # damped update for stability
+        gamma = 0.5 * gamma + 0.5 * gamma_new
     return gamma
 
 def _finish_bribe_fig(x_axis, fname, legend_title=None):
@@ -309,11 +245,6 @@ def _finish_bribe_fig(x_axis, fname, legend_title=None):
     plt.close()
     print(f"  wrote {IMAGES_DIR + fname}")
 
-
-# ════════════════════════════════════════════════════════════════
-# Figures
-# ════════════════════════════════════════════════════════════════
-
 def fig_committee(m=200, k=5, seed=0):
     np.random.seed(seed)
     plt.figure(figsize=FIGSIZE)
@@ -324,7 +255,6 @@ def fig_committee(m=200, k=5, seed=0):
         plt.plot(x_axis, bribe_curve(n, m, k, Ug, x_axis, gamma=g), "-",
                  color=SERIES_COLORS[c], label=f"n={n} ($\\gamma$={g:.2f})")
     _finish_bribe_fig(x_axis, "FeeBribeCommittee.pdf", legend_title="Committee")
-
 
 def fig_ilsize(m=200, n=36, seed=0):
     np.random.seed(seed)
@@ -337,7 +267,6 @@ def fig_ilsize(m=200, n=36, seed=0):
                  color=SERIES_COLORS[c], label=f"k={k} ($\\gamma$={g:.2f})")
     _finish_bribe_fig(x_axis, "FeeBribeILSize.pdf", legend_title="List size")
 
-
 def fig_mempool(m=200, n=36, k=5, seed=0):
     np.random.seed(seed)
     plt.figure(figsize=FIGSIZE)
@@ -349,7 +278,6 @@ def fig_mempool(m=200, n=36, k=5, seed=0):
         plt.plot(x_axis, bribe_curve(n, m, k, Ug, x_axis, gamma=g), "-",
                  color=SERIES_COLORS[c], label=f"avg {scale // 5} ($\\gamma$={g:.2f})")
     _finish_bribe_fig(x_axis, "FeeBribeMempool.pdf", legend_title="Fee scale")
-
 
 def fig_broadcast(m=200, n=36, k=5, seed=0, lc=LC):
     np.random.seed(seed)
@@ -370,11 +298,6 @@ def fig_broadcast(m=200, n=36, k=5, seed=0, lc=LC):
     plt.savefig(IMAGES_DIR + "BroadcastEquilibrium.pdf", format="pdf", bbox_inches="tight")
     plt.close()
     print(f"  wrote {IMAGES_DIR}BroadcastEquilibrium.pdf")
-
-
-# ════════════════════════════════════════════════════════════════
-# Self-test: confirm equivalence to the reference deepcopy algorithm
-# ════════════════════════════════════════════════════════════════
 
 def _self_test():
     import copy
@@ -436,11 +359,6 @@ def _self_test():
             b_single = calculate_bribe_single(n, m, k, Ua.copy(), La_f, Nt_f, tgt)
             worst = max(worst, abs(b_ref[tgt] - b_single))
     print(f"self-test passed over 300 instances; max abs diff vs reference = {worst:.2e}")
-
-
-# ════════════════════════════════════════════════════════════════
-# Main
-# ════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     import os

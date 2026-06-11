@@ -1,39 +1,4 @@
 #!/usr/bin/env python3
-"""
-AUCIL on a live Ethereum block
-==============================
-Fetches the latest Ethereum block, extracts each transaction's priority fee
-(tip), and runs the AUCIL pipeline with the parameters we recommend for
-Ethereum (EIP-7805 scale). It reports the censorship-resistance guarantees in
-ETH and as multiples of the transaction fee.
-
-Recommended Ethereum parameters (EIP-7805):
-  n  = 16     committee size      (IL_COMMITTEE_SIZE = 2^4)
-  k  = 5      input-list size     (~ a few average txns, <= 8 KiB)
-  th = 4      crash tolerance     (25%)
-  b_max = sqrt(n) = 4             VRF bias range
-  u_agg = sqrt(n) * sigma / n     aggregation reward (sigma = tip mass in T(M))
-  gamma = solve_equilibrium_gamma(...)   self-consistent broadcast prob (~0.91)
-
-Usage:
-  python3 ethereum_sim.py                  # live public RPC
-  python3 ethereum_sim.py --rpc URL        # specific RPC endpoint
-  python3 ethereum_sim.py --demo           # offline synthetic block
-  python3 ethereum_sim.py --source dune --query-id 1234567   # Dune (needs DUNE_API_KEY)
-  python3 ethereum_sim.py --dump-fees fees.txt               # dump fees for the explorer
-
-Dune SQL to save as a query (latest-block per-tx effective tip, gwei):
-  WITH latest AS (SELECT max(block_number) AS bn FROM ethereum.transactions)
-  SELECT t.block_number,
-         t.gas_used,
-         (LEAST(t.max_priority_fee_per_gas,
-                t.max_fee_per_gas - b.base_fee_per_gas)) / 1e9              AS tip_gwei,
-         (LEAST(t.max_priority_fee_per_gas,
-                t.max_fee_per_gas - b.base_fee_per_gas)) / 1e9 * t.gas_used AS tip_total_gwei
-  FROM ethereum.transactions t
-  JOIN ethereum.blocks b ON t.block_number = b.number
-  JOIN latest            ON t.block_number = latest.bn
-"""
 
 import argparse
 import json
@@ -45,7 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import simulations as ev   # verified algorithm + figure style (sets the LaTeX style)
+import simulations as ev
 
 IMAGES_DIR = "Figures/"
 SERIES_COLORS = ev.SERIES_COLORS
@@ -62,11 +27,6 @@ _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
 _SSL.verify_mode = ssl.CERT_NONE
 
-
-# ════════════════════════════════════════════════════════════════
-# Data acquisition
-# ════════════════════════════════════════════════════════════════
-
 def _rpc(url, method, params, timeout=30):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     req = urllib.request.Request(url, data=body,
@@ -77,12 +37,7 @@ def _rpc(url, method, params, timeout=30):
         raise RuntimeError(out.get("error", "no result"))
     return out["result"]
 
-
 def fetch_block_rpc(rpc_url=None):
-    """Return (block_number, tips_eth ndarray, meta) from a public JSON-RPC node.
-
-    Per-transaction tip = (effectiveGasPrice - baseFeePerGas) * gasUsed, in ETH.
-    """
     urls = [rpc_url] if rpc_url else PUBLIC_RPCS
     last_err = None
     for url in urls:
@@ -95,7 +50,7 @@ def fetch_block_rpc(rpc_url=None):
             for r in receipts:
                 egp = int(r["effectiveGasPrice"], 16)
                 gu = int(r["gasUsed"], 16)
-                tip = max(egp - base, 0) * gu / 1e18      # ETH
+                tip = max(egp - base, 0) * gu / 1e18
                 tips.append(tip)
             tips = np.array([t for t in tips if t > 0], dtype=float)
             meta = dict(source=f"RPC {url}", base_fee_gwei=base / 1e9,
@@ -106,9 +61,7 @@ def fetch_block_rpc(rpc_url=None):
             continue
     raise RuntimeError(f"all RPC endpoints failed (last: {last_err})")
 
-
 def fetch_block_dune(query_id, api_key, execute=False):
-    """Return (block_number, tips ndarray, meta) from a saved Dune query."""
     base = "https://api.dune.com/api/v1"
     hdr = {"X-Dune-API-Key": api_key, "User-Agent": _UA}
 
@@ -137,7 +90,7 @@ def fetch_block_dune(query_id, api_key, execute=False):
             time.sleep(2)
         data = _get(f"/execution/{eid}/results")
     else:
-        data = _get(f"/query/{query_id}/results")     # cached latest results (cheaper)
+        data = _get(f"/query/{query_id}/results")
 
     rows = data["result"]["rows"]
     if not rows:
@@ -151,7 +104,6 @@ def fetch_block_dune(query_id, api_key, execute=False):
             bn = int(rows[0][c]); break
     meta = dict(source=f"Dune query {query_id}", fee_col=fee_col, n_tx=len(rows), n_tip=len(tips))
     return bn, tips, meta
-
 
 def _detect_fee_col(row):
     prefer = ["tip_total_gwei", "tip_gwei", "priority_fee_gwei", "priority_fee",
@@ -168,29 +120,21 @@ def _detect_fee_col(row):
             continue
     raise RuntimeError(f"could not detect a fee column in row keys {list(row)}")
 
-
 def synthetic_block(seed=0):
-    """Realistic offline block: ~180 txns, log-normal priority tips (ETH)."""
     rng = np.random.RandomState(seed)
     n_tx = rng.randint(150, 220)
     tip_gwei = rng.lognormal(mean=0.6, sigma=1.1, size=n_tx)
     gas = rng.lognormal(mean=11.3, sigma=0.7, size=n_tx)
-    tips = tip_gwei * 1e-9 * gas      # ETH
+    tips = tip_gwei * 1e-9 * gas
     tips = tips[tips > 0]
     meta = dict(source="synthetic (offline demo)", base_fee_gwei=1.0, n_tx=n_tx, n_tip=len(tips))
     return None, np.array(tips, dtype=float), meta
 
-
-# ════════════════════════════════════════════════════════════════
-# AUCIL analysis with EIP-7805 parameters
-# ════════════════════════════════════════════════════════════════
-
 def run_aucil(tips, n=16, k=5, theta=4):
-    """Run AUCIL on a vector of per-transaction tips (ETH). Returns a report dict."""
     Ug = np.asarray(tips, dtype=float)
     m = len(Ug)
     La1, Nt1 = ev.two_step_transaction_inclusion(n, m, k, Ug, alpha=1)
-    sigma = float(sum(Ug[i] for i in range(m) if Nt1[i] > 0))      # tip mass in T(M)
+    sigma = float(sum(Ug[i] for i in range(m) if Nt1[i] > 0))
     u_agg = np.sqrt(n) * sigma / n
     gamma = ev.solve_equilibrium_gamma(n, m, k, Ug, u_agg=u_agg)
 
@@ -202,18 +146,11 @@ def run_aucil(tips, n=16, k=5, theta=4):
     med_fee = float(np.median(Ug)) if m else 0.0
     med_sel_fee = float(np.median([Ug[i] for i in selected])) if selected else 0.0
 
-    # Input CR is the binding layer (realized cost is min(beta1, beta2, beta3)),
-    # so we summarize the per-transaction Input-CR multiple over the protected set.
     sel_ratios = [float(bribes[i] / Ug[i]) for i in selected if Ug[i] > 0 and bribes[i] > 0]
     input_cr_ratio_median = float(np.median(sel_ratios)) if sel_ratios else 0.0
     input_cr_ratio_max = float(np.max(sel_ratios)) if sel_ratios else 0.0
-    # Among the protected transactions, those whose Input CR strictly exceeds their fee.
     n_above_fee = int(sum(1 for r in sel_ratios if r > 1.0))
 
-    # Input-CR multiple for the highest-fee transactions: those at or above the
-    # 95th fee percentile of the protected set. We report the range (min..max)
-    # of the Input-CR/fee ratio over this top slice, since that is where the
-    # protection is concentrated.
     p95_lo = p95_hi = 0.0
     p95_count = 0
     if selected:
@@ -240,11 +177,6 @@ def run_aucil(tips, n=16, k=5, theta=4):
                 n_above_fee=n_above_fee,
                 p95_lo=p95_lo, p95_hi=p95_hi, p95_count=p95_count,
                 top=top_rows, Ug=Ug, La=La, Nt=Nt, bribes=bribes, selected=selected)
-
-
-# ════════════════════════════════════════════════════════════════
-# Reporting + figure
-# ════════════════════════════════════════════════════════════════
 
 def print_report(block_number, meta, rep):
     line = "=" * 66
@@ -284,40 +216,22 @@ def print_report(block_number, meta, rep):
     print(f"  is strictly higher, so it is never the bottleneck.")
     print(line)
 
-
 def _label_guides(xhi, yhi):
-    """Annotate the y=x and y=5x reference lines just inside the right edge.
-
-    Right-aligned at the x upper limit so each label sits on its guide line and
-    stays within the axes -- previously the labels were centered on the boundary
-    and spilled outside the plot. Shared by both Ethereum figures so they look
-    identical.
-    """
     xlab = 0.98 * xhi
     plt.text(xlab, xlab, "y=x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.text(xlab, min(5 * xlab, 0.97 * yhi), "y=5x",
              ha="right", va="bottom", alpha=0.4, fontsize=9)
 
-
 def save_figure(blocks):
-    """Scatter Input CR vs. fee for every protected tx, overlaying each block.
-
-    Real-block fees are heavy-tailed: most protected txs pay a small fee and get
-    little protection, while a few high-fee txs carry the large (10-15x) Input CR
-    that is the whole point. On linear axes that tail is either clipped or
-    squashed into a corner, wasting most of the plot -- so we use log-log axes:
-    every point stays visible and the y=x / y=5x guides remain straight, parallel
-    reference lines. ``blocks`` is a list of (block_number, report) pairs.
-    """
     os.makedirs(IMAGES_DIR, exist_ok=True)
-    scale = 1e9                       # ETH -> Gwei-ETH for readable tick labels
+    scale = 1e9
     plt.figure(figsize=ev.FIGSIZE)
     fxs, bys, dropped = [], [], 0
     for j, (block_number, rep) in enumerate(blocks):
         Ug, bribes, selected = rep["Ug"], rep["bribes"], rep["selected"]
         fx = np.array([Ug[i] for i in selected]) * scale
         by = np.array([bribes[i] for i in selected]) * scale
-        pos = by > 0                  # log axes can't show zero-CR marginal txs
+        pos = by > 0
         dropped += int((~pos).sum())
         fx, by = fx[pos], by[pos]
         if len(fx) == 0:
@@ -333,13 +247,12 @@ def save_figure(blocks):
         return
     fx_all, by_all = np.concatenate(fxs), np.concatenate(bys)
     xlo, xhi = fx_all.min() / 1.5, fx_all.max() * 1.5
-    # The y range must hold both the data and the guide endpoints over [xlo, xhi].
     ylo = min(by_all.min(), xlo) / 1.5
     yhi = max(by_all.max(), 5 * xhi) * 1.5
     xr = np.array([xlo, xhi])
     plt.plot(xr, xr, label="_x", **ev.REF_KW)
     plt.plot(xr, 5 * xr, label="_5x", **ev.REF_KW)
-    xg = xhi / 1.3                     # label the guides just inside the right edge
+    xg = xhi / 1.3
     plt.text(xg, xg, "y=x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.text(xg, 5 * xg, "y=5x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.xscale("log")
@@ -356,23 +269,14 @@ def save_figure(blocks):
         print(f"  (note: {dropped} marginal txs with zero Input CR omitted from log plot)")
     print(f"  figure written    : {IMAGES_DIR}EthereumBlockCR.pdf")
 
-
 def fee_sweep(blocks, n=16, k=5, theta=4, npts=40):
-    """Insert one of OUR transactions into each block and sweep its fee.
-
-    For every block we append a target transaction to the real per-tx tip
-    vector, vary its fee from 0 to ~1.5x that block's current max tip, and
-    compute the target's Input CR (the binding layer) at each fee. Overlaying the
-    blocks shows the protection-vs-fee curve is consistent across blocks.
-    ``blocks`` is a list of (block_number, tips) pairs.
-    """
     os.makedirs(IMAGES_DIR, exist_ok=True)
     scale = 1e9
     plt.figure(figsize=ev.FIGSIZE)
     xhi = yhi = 0.0
     for j, (block_number, tips) in enumerate(blocks):
         base = np.asarray(tips, dtype=float)
-        target = len(base)                 # our tx is the last index
+        target = len(base)
         Ug = np.append(base, 0.0)
         m = len(Ug)
         gamma = ev.solve_equilibrium_gamma(n, m, k, Ug)
@@ -387,7 +291,6 @@ def fee_sweep(blocks, n=16, k=5, theta=4, npts=40):
         xhi = max(xhi, float(fx.max()))
         yhi = max(yhi, float(by.max()))
 
-        # console reference points for the first (representative) block
         if j == 0:
             print(f"  fee sweep (our tx) : block {block_number}, fee 0 -> {xmax*1e9:.2f} Gwei-gas")
             for frac in (0.25, 0.5, 1.0):
@@ -412,18 +315,7 @@ def fee_sweep(blocks, n=16, k=5, theta=4, npts=40):
     plt.close()
     print(f"  figure written    : {IMAGES_DIR}EthereumFeeSweep.pdf")
 
-
-# ════════════════════════════════════════════════════════════════
-# Main
-# ════════════════════════════════════════════════════════════════
-
 def load_pinned_block(path="pinned_block.txt"):
-    """Load the committed representative block (per-tx tips in ETH).
-
-    This makes the figures reproducible: by default we use this pinned block
-    rather than whatever block is live at run time. The block was captured from
-    a live public RPC; its number is recorded in the file header.
-    """
     bn = None
     tips = []
     with open(path) as f:
@@ -437,14 +329,7 @@ def load_pinned_block(path="pinned_block.txt"):
     meta = dict(source=f"pinned block {bn}", n_tx=len(tips), n_tip=len(tips))
     return bn, tips, meta
 
-
 def load_pinned_blocks(path="pinned_blocks.txt"):
-    """Load the committed representative blocks (per-tx tips in ETH).
-
-    Multi-block companion to load_pinned_block: the file holds several stanzas,
-    each a ``# block_number=N`` header followed by one CSV line of positive
-    per-tx tips. Returns a list of (block_number, tips, meta).
-    """
     blocks, bn, tips = [], None, None
     with open(path) as f:
         for line in f:
@@ -462,13 +347,7 @@ def load_pinned_blocks(path="pinned_blocks.txt"):
     return [(b, t, dict(source=f"pinned block {b}", n_tx=len(t), n_tip=len(t)))
             for b, t in blocks]
 
-
 def average_blocks(n_blocks=10, n=16, k=5, theta=4, rpc=None):
-    """Fetch n_blocks live blocks and average the headline Input-CR metrics.
-
-    Intended to be run locally (needs ~n_blocks live RPC round-trips). Prints a
-    table and the mean 95th-percentile Input-CR range across blocks.
-    """
     rows, p95los, p95his, maxes = [], [], [], []
     bn0 = None
     for _ in range(n_blocks):
@@ -491,7 +370,6 @@ def average_blocks(n_blocks=10, n=16, k=5, theta=4, rpc=None):
               f"{np.mean(p95los):.1f}x to {np.mean(p95his):.1f}x; "
               f"mean max {np.mean(maxes):.1f}x")
     return rows
-
 
 def main():
     ap = argparse.ArgumentParser(description="Run AUCIL on a representative (pinned) or live Ethereum block.")
@@ -532,8 +410,6 @@ def main():
     else:
         acquired = load_pinned_blocks()
 
-    # Run AUCIL on each acquired block (the pinned default has three; live/demo
-    # sources have one, so the figures simply show a single series).
     runs = []
     for block_number, tips, meta in acquired:
         if tips is None or len(tips) == 0:
@@ -545,17 +421,15 @@ def main():
 
     if args.dump_fees:
         tips0 = runs[0][1]
-        vals = ", ".join(f"{t*1e9:.4f}" for t in tips0)     # Gwei-ETH units
+        vals = ", ".join(f"{t*1e9:.4f}" for t in tips0)
         with open(args.dump_fees, "w") as f:
             f.write(vals)
         print(f"  fees dumped to    : {args.dump_fees}  ({len(tips0)} values)")
 
-    # Report the first (representative) block in detail; figures overlay all.
     bn0, tips0, meta0, rep0 = runs[0]
     print_report(bn0, meta0, rep0)
     save_figure([(bn, rep) for bn, _, _, rep in runs])
     fee_sweep([(bn, tips) for bn, tips, _, _ in runs], n=args.n, k=args.k, theta=args.theta)
-
 
 if __name__ == "__main__":
     main()

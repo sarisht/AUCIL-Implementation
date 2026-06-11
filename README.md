@@ -23,6 +23,27 @@ sudo apt install cm-super dvipng texlive-latex-extra texlive-latex-recommended
 pip install numpy matplotlib numba   # numba is optional (speeds up the solver)
 ```
 
+## Ethereum data (optional, for live runs)
+
+By default `ethereum_sim.py` uses the committed `pinned_blocks.txt`. To run on a
+live block instead, use a public RPC (`--source rpc`) or a Dune query
+(`--source dune --query-id <ID>`, with `DUNE_API_KEY` set). The Dune query below
+returns one row per transaction of the latest block (effective priority tip);
+save it and pass its id:
+
+```sql
+WITH latest AS (SELECT max(block_number) AS bn FROM ethereum.transactions)
+SELECT t.block_number,
+       t.gas_used,
+       (LEAST(t.max_priority_fee_per_gas,
+              t.max_fee_per_gas - b.base_fee_per_gas)) / 1e9              AS tip_gwei,
+       (LEAST(t.max_priority_fee_per_gas,
+              t.max_fee_per_gas - b.base_fee_per_gas)) / 1e9 * t.gas_used AS tip_total_gwei
+FROM ethereum.transactions t
+JOIN ethereum.blocks b ON t.block_number = b.number
+JOIN latest            ON t.block_number = latest.bn
+```
+
 ## Reproducing the figures
 
 ```sh
