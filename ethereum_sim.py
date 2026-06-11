@@ -221,6 +221,8 @@ def _label_guides(xhi, yhi):
     plt.text(xlab, xlab, "y=x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.text(xlab, min(5 * xlab, 0.97 * yhi), "y=5x",
              ha="right", va="bottom", alpha=0.4, fontsize=9)
+    plt.text(xlab, min(16 * xlab, 0.97 * yhi), "y=16x",
+             ha="right", va="bottom", alpha=0.4, fontsize=9)
 
 def save_figure(blocks):
     os.makedirs(IMAGES_DIR, exist_ok=True)
@@ -248,13 +250,15 @@ def save_figure(blocks):
     fx_all, by_all = np.concatenate(fxs), np.concatenate(bys)
     xlo, xhi = fx_all.min() / 1.5, fx_all.max() * 1.5
     ylo = min(by_all.min(), xlo) / 1.5
-    yhi = max(by_all.max(), 5 * xhi) * 1.5
+    yhi = max(by_all.max(), 16 * xhi) * 1.3
     xr = np.array([xlo, xhi])
     plt.plot(xr, xr, label="_x", **ev.REF_KW)
     plt.plot(xr, 5 * xr, label="_5x", **ev.REF_KW)
+    plt.plot(xr, 16 * xr, label="_16x", **ev.REF_KW)
     xg = xhi / 1.3
     plt.text(xg, xg, "y=x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.text(xg, 5 * xg, "y=5x", ha="right", va="bottom", alpha=0.4, fontsize=9)
+    plt.text(xg, 16 * xg, "y=16x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.xscale("log")
     plt.yscale("log")
     plt.xlim(xlo, xhi)
@@ -281,7 +285,7 @@ def fee_sweep(blocks, n=16, k=5, theta=4, npts=40):
         m = len(Ug)
         gamma = ev.solve_equilibrium_gamma(n, m, k, Ug)
 
-        xmax = float(base.max()) * 1.5
+        xmax = min(float(base.max()) * 1.5, 3e6 / scale)
         xs = np.linspace(0.0, xmax, npts)
         ys = ev.bribe_curve(n, m, k, Ug, xs, target=target, gamma=gamma)
         fx, by = xs * scale, np.asarray(ys) * scale
@@ -299,10 +303,11 @@ def fee_sweep(blocks, n=16, k=5, theta=4, npts=40):
                 mult = (b / gfee) if gfee > 0 else 0.0
                 print(f"      fee={gfee*1e9:8.2f} Gwei-gas  Input CR={b*1e9:8.2f}  ({mult:.1f}x)")
 
-    yhi = max(yhi, 5 * xhi) * 1.1
+    yhi = max(yhi, 16 * xhi) * 1.1
     xr = np.linspace(0, xhi, 50)
     plt.plot(xr, xr, label="_x", **ev.REF_KW)
     plt.plot(xr, 5 * xr, label="_5x", **ev.REF_KW)
+    plt.plot(xr, 16 * xr, label="_16x", **ev.REF_KW)
     _label_guides(xhi, yhi)
     plt.xlabel("Fee Paid")
     plt.ylabel("Adversarial Bribe Tolerated")

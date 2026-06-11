@@ -233,8 +233,9 @@ def solve_equilibrium_gamma(n, m, k, Ug, u_agg=None, gamma0=0.95,
 def _finish_bribe_fig(x_axis, fname, legend_title=None):
     plt.plot(x_axis, x_axis, label="_x", **REF_KW)
     plt.plot(x_axis, 5 * x_axis, label="_5x", **REF_KW)
-    plt.text(x_axis[-1], x_axis[-1] * 1.4, "y=x", ha="center", va="bottom", alpha=0.4, fontsize=9)
-    plt.text(x_axis[-1], 5 * x_axis[-1] * 1.02, "y=5x", ha="center", va="bottom", alpha=0.4, fontsize=9)
+    xlab = 0.98 * x_axis[-1]
+    plt.text(xlab, xlab, "y=x", ha="right", va="bottom", alpha=0.4, fontsize=9)
+    plt.text(xlab, min(5 * xlab, 0.97 * 5 * x_axis[-1] * 1.1), "y=5x", ha="right", va="bottom", alpha=0.4, fontsize=9)
     plt.xlabel("Fee Paid")
     plt.ylabel("Adversarial Bribe Tolerated")
     plt.title("Fee vs. Bribe Tolerated")

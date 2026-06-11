@@ -11,9 +11,9 @@
   :root{
     --paper:#f4f1e8; --ink:#1c2433; --ink-soft:#55607a;
     --rule:#d8d2c0; --rule-strong:#b7ae96;
-    --blue:#26456e; --blue-soft:#e4ebf3;
-    --amber:#c2541a; --amber-soft:#f6e2cf;
-    --green:#3f6b4d; --green-soft:#dde9df;
+    --blue:#1d3f72; --blue-soft:#dde7f3;
+    --amber:#d2470a; --amber-soft:#f7ddc6;
+    --green:#2f6b44; --green-soft:#d6e7da;
     --grid:#ece5d4;
   }
   *{box-sizing:border-box;}
@@ -25,14 +25,14 @@
   header{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px;}
   .kicker{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.28em;
     text-transform:uppercase;color:var(--amber);font-weight:600;}
-  h1{font-size:40px;line-height:1.02;margin:.18em 0 .1em;font-weight:600;letter-spacing:-.01em;}
+  h1{font-size:48px;line-height:1.0;margin:.16em 0 .1em;font-weight:600;letter-spacing:-.02em;}
   h1 em{font-style:italic;color:var(--blue);}
   .sub{color:var(--ink-soft);font-size:16px;max-width:62ch;line-height:1.5;}
   .mono{font-family:"IBM Plex Mono",monospace;}
 
-  .panel{background:#fbf9f1;border:1px solid var(--rule-strong);
+  .panel{background:#fbf9f1;border:1.5px solid var(--rule-strong);
     border-radius:3px;padding:18px 20px;margin-top:22px;
-    box-shadow:3px 3px 0 rgba(28,36,51,.06);}
+    box-shadow:5px 5px 0 rgba(28,36,51,.11);}
   .panel h2{font-size:13px;font-family:"IBM Plex Mono",monospace;letter-spacing:.16em;
     text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;font-weight:600;}
 
@@ -83,6 +83,8 @@
   .bar{position:absolute;left:0;top:50%;transform:translateY(-50%);height:60%;
     background:var(--blue-soft);border-radius:1px;z-index:0;}
   .barcell span{position:relative;z-index:1;}
+  #t2 td:nth-child(4){color:var(--amber);font-weight:700;font-size:14px;}
+  #t2 td:nth-child(5){color:var(--blue);font-weight:700;font-size:14px;}
 
   .stepline{font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:1.55;
     background:#fff;border:1px solid var(--rule);border-radius:2px;padding:12px 14px;margin-bottom:16px;color:var(--ink);}
@@ -130,12 +132,14 @@
     font-size:13px;color:var(--ink-soft);padding:5px 0;border-bottom:1px solid var(--grid);}
   .cmp-row:last-child{border-bottom:none;}
   .cmp-row b{font-family:"IBM Plex Mono",monospace;color:var(--ink);font-size:13px;text-align:right;}
-  .cmp-row.big b{font-size:16px;}
+  .cmp-row.big{padding-top:9px;}
+  .cmp-row.big span{font-weight:600;color:var(--ink);}
+  .cmp-row.big b{font-size:26px;letter-spacing:-.02em;}
   .cmp-card.mcp .cmp-row.big b{color:var(--amber);}
   .cmp-card.aucil .cmp-row.big b{color:var(--blue);}
-  .cmp-headline{margin-top:16px;font-size:14px;line-height:1.55;color:var(--ink);
-    background:var(--blue-soft);border-radius:3px;padding:12px 14px;}
-  .cmp-headline b{color:var(--blue);}
+  .cmp-headline{margin-top:16px;font-size:22px;line-height:1.1;color:var(--ink-soft);
+    background:var(--blue-soft);border-radius:3px;padding:22px 16px;text-align:center;}
+  .cmp-headline b{color:var(--blue);font-size:2.5em;letter-spacing:-.02em;}
   .cmp-headline .amber{color:var(--amber);}
   .seat-card{border:1px solid var(--rule-strong);border-left:4px solid var(--amber);border-radius:3px;
     padding:14px 16px;background:#fff;margin-bottom:12px;}
@@ -148,8 +152,9 @@
   .chip{display:inline-flex;align-items:baseline;gap:3px;background:var(--blue-soft);color:var(--blue);
     font-family:"IBM Plex Mono",monospace;font-size:12px;padding:2px 7px;border-radius:3px;}
   .chip small{color:var(--ink-soft);font-size:10px;}
-  .seat-verdict{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink);
-    background:var(--blue-soft);border-radius:3px;padding:10px 12px;}
+  .seat-verdict{margin-top:10px;font-size:26px;line-height:1.1;color:var(--ink);
+    background:var(--blue-soft);border-radius:3px;padding:20px 14px;text-align:center;
+    letter-spacing:-.01em;}
   .seat-verdict b{color:var(--blue);}
   .seat-detect{font-size:13.5px;line-height:1.6;color:var(--ink);margin:4px 2px 14px;}
   .seat-detect b{color:var(--ink);}
@@ -170,9 +175,8 @@
     <div class="kicker">AUCIL · Anonymous Artifact · Algorithm 1</div>
     <h1>The Two-Step <em>Inclusion</em> Explorer</h1>
   </header>
-  <p class="sub">An interactive walk-through of the greedy correlated-equilibrium allocation
-  (Algorithm 1). Set the parameters, then step through Phase&nbsp;1 (greedy selection) and watch
-  Phase&nbsp;2 (round-robin allocation) and the per-transaction bribe tolerated assemble in real time.</p>
+  <p class="sub">Step through Algorithm&nbsp;1 — greedy selection, round-robin allocation, and the
+  bribe each transaction can tolerate — and watch censorship resistance build in real time.</p>
 
   <!-- CONTROLS -->
   <div class="panel">
@@ -215,11 +219,9 @@
       <button id="all" class="ghost">Run to end ⏭</button>
       <button id="reset" class="ghost">Reset ↺</button>
     </div>
-    <p class="note">Defaults reproduce the paper's example: <code>n=3, k=2, U=[11,10,9,6,4,3]</code>.
-    Phase&nbsp;1 makes <code>n·k</code> greedy picks, each time choosing the object with the highest
-    <em>marginal</em> utility <code>U⌀N_c</code>; an object is retired once it has been selected by all
-    <code>n</code> proposers. The denominator grows by <code>γ</code> per selection, matching the utility
-    <code>u_i /(1+γ(n_i−1))</code>.</p>
+    <p class="note">Defaults reproduce the paper's example <code>n=3, k=2, U=[11,10,9,6,4,3]</code>.
+    Phase&nbsp;1 makes <code>n·k</code> greedy picks of the highest marginal utility <code>u/N_c</code>;
+    an object retires once all <code>n</code> proposers hold it.</p>
   </div>
 
   <!-- PHASE 1 -->
@@ -248,9 +250,8 @@
         <span class="sw" style="background:var(--blue)"></span>allocated object
         <span class="sw" style="background:var(--green)"></span>party utility U<sub>j</sub>
       </div>
-      <p class="note">Selected objects are sorted by finalized utility <code>U_f = u ⌀ (N_c−γ)</code>
-      and dealt round-robin, so an object chosen <code>n_i</code> times lands in <code>n_i</code> distinct
-      input lists. This is the allocation every proposer can simulate — the correlation device.</p>
+      <p class="note">Objects are sorted by final utility <code>U_f</code> and dealt round-robin into the
+      <code>n</code> input lists — the public correlation device every proposer can reproduce.</p>
     </div>
     <div class="panel">
       <h2>Censorship Cost · Bribe Tolerated</h2>
@@ -260,24 +261,19 @@
           <tbody id="t2body"></tbody>
         </table>
       </div>
-      <p class="note">For each object in the inclusion set, <code>b_i</code> is the minimum adversary
-      payment to remove it (Action&nbsp;②), computed exactly as in <code>evaluation.py</code>
-      (<code>calculate_bribe_single</code>). Note the super-linear growth in the fee — higher-paying
-      transactions buy disproportionately more protection.</p>
+      <p class="note"><code>b_i</code> is the minimum bribe to remove object <code>i</code>. Note the
+      super-linear growth — higher-paying transactions buy disproportionately more protection.</p>
     </div>
   </div>
 
   <!-- MCP COMPARISON -->
   <div class="panel">
     <h2>Comparison · naive MCP (mixed NE) vs. the coordination attack</h2>
-    <p class="note" style="margin-top:0">A naive multi-proposer scheme (MCP-style) has no correlation
-    device, so rational proposers play a <b>mixed Nash equilibrium</b>: each independently selects
-    transactions with probability proportional to fee. Collisions make this inefficient — a correlated
-    equilibrium Pareto-dominates it. An adversary exploits that gap: posing as a coordinator, it offers
-    everyone the efficient CE that <b>omits a target</b>, guaranteeing each party at least its MNE payoff
-    (a conditional top-up covers any shortfall). Parties rationally accept, and the target is censored.
-    AUCIL closes the gap by <em>being</em> the correlation device — it already hands parties the efficient
-    CE including the target, so removing it costs the full Input-CR bribe.</p>
+    <p class="note" style="margin-top:0">A naive scheme has no correlation device, so proposers play a
+    <b>mixed Nash equilibrium</b>. An adversary posing as coordinator offers everyone the efficient
+    allocation that <b>omits a target</b> — each party still clears its NE payoff — so the target is
+    censored for free. AUCIL <em>is</em> the correlation device, so removing a transaction costs the full
+    Input-CR bribe.</p>
 
     <div class="cmp-controls">
       <label class="ctl">Censor target&nbsp;
@@ -297,7 +293,6 @@
       <div class="cmp-card aucil">
         <div class="cmp-h">② AUCIL (this protocol)</div>
         <div class="cmp-row"><span>Target in the inclusion list T(M)?</span><b id="aucIn">–</b></div>
-        <div class="cmp-row"><span>Protocol-supplied CE utility/party</span><b id="aucU">–</b></div>
         <div class="cmp-row big"><span>Cost to censor target (Input CR)</span><b id="aucCost">–</b></div>
       </div>
     </div>
@@ -307,10 +302,9 @@
   <!-- COORDINATION ATTACK FROM ONE PROPOSER'S SEAT -->
   <div class="panel">
     <h2>Inside the coordination attack · you are one proposer</h2>
-    <p class="note" style="margin-top:0">An adversary privately hands <em>you</em> a recommended input
-    list and guarantees your usual coordinated revenue (topping up any shortfall). You see only your own
-    list — never the other proposers'. Can you tell an honest coordinator from one that is secretly
-    censoring a transaction?</p>
+    <p class="note" style="margin-top:0">An adversary hands <em>you</em> one proposer's recommended list
+    and guarantees your revenue. You see only your own list. Can you tell honest coordination from secret
+    censorship?</p>
 
     <div class="cmp-controls">
       <label class="ctl">You are&nbsp;<select id="seatProposer"></select></label>
@@ -323,11 +317,10 @@
     </div>
 
     <div class="seat-card">
-      <div class="cmp-h">The offer on your desk</div>
-      <div class="seat-row"><span>Your recommended input list <small>(all you ever see)</small></span><span class="seat-list" id="seatList"></span></div>
-      <div class="seat-row"><span>Guaranteed revenue (topped up if short)</span><b id="seatGuar">–</b></div>
+      <div class="seat-row"><span>Offer:</span><span class="seat-list" id="seatList"></span></div>
+      <div class="seat-row"><span>Revenue guaranteed:</span><b id="seatGuar">–</b></div>
       <div class="seat-row"><span>If you <b>accept</b></span><b id="seatAccept">–</b></div>
-      <div class="seat-row"><span>If you <b>decline</b> → uncoordinated mixed NE</span><b id="seatDecline">–</b></div>
+      <div class="seat-row"><span>If you <b>decline</b></span><b id="seatDecline">–</b></div>
       <div class="seat-verdict" id="seatVerdict"></div>
     </div>
 
@@ -341,11 +334,6 @@
     <div class="seat-reveal aucil" id="seatDefendBox" style="display:none"></div>
   </div>
 
-  <div class="foot">
-    Algorithm transcribed verbatim from the paper's Algorithm&nbsp;1 and verified identical to
-    <span style="color:var(--blue)">evaluation.py</span> across 60 random instances (n,k,m,γ varied;
-    0 mismatches). This tool runs entirely in the browser — no data leaves the page.
-  </div>
 </div>
 
 <script>
@@ -700,8 +688,6 @@ function renderComparison(){
   let coord=0; for(let j=0;j<n;j++) coord+=Math.max(0, mneAvg-adv[j]);
 
   // AUCIL: target is in T(M); cost to censor = Input-CR bribe
-  const {L}=allocate(full); let aucTot=0; for(let p=1;p<=n;p++) aucTot+=partyUtil(full,L[p]);
-  const aucU=aucTot/n;
   const bribe = bribeSingle(full,target);
 
   $('mneU').textContent=mneAvg.toFixed(2);
@@ -711,17 +697,11 @@ function renderComparison(){
   $('advAccept').textContent = accept? 'yes (no top-up needed)' : 'yes (via conditional top-up)';
   $('advCost').textContent = coord.toFixed(2);
   $('aucIn').textContent='yes';
-  $('aucU').textContent=aucU.toFixed(2);
   $('aucCost').textContent=bribe.toFixed(2);
 
   const ratio = coord>1e-9 ? (bribe/coord) : Infinity;
-  const rtxt = isFinite(ratio)? (ratio.toFixed(1)+'×') : '∞ (free under MCP)';
-  $('cmpHeadline').innerHTML =
-    `Censoring <b>m${target+1}</b> (fee ${fees[target].toFixed(2)}): under naive MCP the adversary `+
-    `coordinates the parties out of the mixed NE for <span class="amber">${coord.toFixed(2)}</span>, `+
-    `but AUCIL forces a bribe of <b>${bribe.toFixed(2)}</b> — about <b>${rtxt}</b> more. `+
-    `The protocol's correlated equilibrium (total ${aucTot.toFixed(2)}) already Pareto-dominates the `+
-    `mixed NE (total ${mneTot.toFixed(2)}), so there is no efficiency gain left for an adversary to weaponize.`;
+  const rtxt = isFinite(ratio)? (ratio.toFixed(1)+'×') : '∞×';
+  $('cmpHeadline').innerHTML = `<b>${rtxt}</b> more`;
 }
 
 // ── Coordination attack from one proposer's seat ──
@@ -767,19 +747,19 @@ function renderSeat(){
   $('seatDecline').textContent='≈ '+decline.toFixed(2);
   const acc=acceptPay>=decline-1e-9;
   $('seatVerdict').innerHTML = acc
-    ? `<b>Rational choice: accept.</b> The offer guarantees ${guar.toFixed(2)} — at least your ${decline.toFixed(2)} mixed-NE fallback — and nothing you do unilaterally beats following the recommendation.`
-    : `Decline: the offer (${guar.toFixed(2)}) is below your ${decline.toFixed(2)} fallback.`;
+    ? `<b>Rational choice: Accept</b>`
+    : `<b>Rational choice: Decline</b>`;
 
   const isAssignee=honestList.includes(target);
   const identical=JSON.stringify([...shown].sort((a,b)=>a-b))===JSON.stringify([...honestList].sort((a,b)=>a-b));
   let det;
   if(mode==='honest'){
-    det=`You can't be sure this coordinator is honest — but it doesn't change your decision: an honest coordinator and a censoring one hand you the <em>same</em> kind of offer with the <em>same</em> guarantee. You accept either way. That symmetry is exactly what the attacker relies on.`;
+    det=`Honest or censoring, you get the <em>same</em> offer with the <em>same</em> guarantee — so you accept either way. That symmetry is what the attacker relies on.`;
   } else {
-    det=`A target <em>is</em> being censored — but can <b>you</b> see it? You only ever receive your own list and a revenue guarantee; you never see the honest allocation to compare against, and in a plain MCP scheme you cannot recompute it. `+
-      (identical? `Here your list is in fact <b>identical</b> to what honest coordination would give you. `
-                : `Your list is a perfectly valid coordinated allocation; without the honest counterfactual you have no way to notice anything is missing. `)+
-      `Every transaction you were handed is a genuine high-fee item — the target is simply <b>absent</b>, and absence is normal because no proposer is assigned every transaction. So you accept, and so does everyone else.`;
+    det=`A target <em>is</em> being censored — but can <b>you</b> see it? You only see your own list, never the honest allocation to compare against. `+
+      (identical? `Here it's in fact <b>identical</b> to honest coordination. `
+                : `It's a valid coordinated allocation; nothing looks missing. `)+
+      `The target is simply <b>absent</b> — normal, since no proposer holds every transaction. So you accept, and so does everyone.`;
   }
   $('seatDetect').innerHTML=det;
 
@@ -792,8 +772,7 @@ function seatRevealToggle(){
   if(box.style.display!=='none'){ box.style.display='none'; $('seatReveal').textContent="Reveal what's really happening ▸"; return; }
   let absent=0; for(let p=1;p<=t.n;p++) if(!t.cens.L[p].includes(t.target)) absent++;
   const pre=($('seatMode').value==='honest')?`<em>(This run is honest — nothing is actually censored. Below is what the same setup would look like under a censoring adversary.)</em><br><br>`:'';
-  box.innerHTML=pre+`<b>Global truth (hidden from every proposer):</b> the target is <span class="amber">m${t.target+1}</span> (fee ${t.fees[t.target].toFixed(2)}). `+
-    `In the censoring recommendation it is absent from <b>all ${absent} of ${t.n}</b> proposers' lists — each was privately told a <em>different</em> peer would include it. No single seat reveals the omission, so every proposer accepts and m${t.target+1} is censored at roughly zero cost (only the small top-up to honor the revenue guarantees).`;
+  box.innerHTML=pre+`<b>Hidden truth:</b> target <span class="amber">m${t.target+1}</span> is absent from <b>all ${absent} of ${t.n}</b> lists — each proposer was told a <em>different</em> peer would include it. No seat sees the omission, so m${t.target+1} is censored at near-zero cost.`;
   box.style.display='block'; $('seatReveal').textContent="Hide ▾";
 }
 function seatDefendToggle(){
@@ -801,11 +780,10 @@ function seatDefendToggle(){
   if(box.style.display!=='none'){ box.style.display='none'; $('seatDefend').textContent="AUCIL's defense: recompute the allocation ▸"; return; }
   const assignees=[]; for(let p=1;p<=t.n;p++) if(t.honest.L[p].includes(t.target)) assignees.push('P'+p);
   const pre=($('seatMode').value==='honest')?`<em>(Illustrating the censoring case: how AUCIL would let you catch it.)</em><br><br>`:'';
-  box.innerHTML=pre+`<b>AUCIL's defense.</b> The allocation is a deterministic, public function of the common mempool, so you recompute it yourself: m${t.target+1} is assigned to <b>${assignees.join(', ')||'(none)'}</b>. `+
+  box.innerHTML=pre+`<b>AUCIL's defense.</b> The allocation is a public function of the mempool, so you recompute it: m${t.target+1} belongs to <b>${assignees.join(', ')||'(none)'}</b>. `+
     (t.isAssignee
-      ? `That includes <b>you</b> (P${t.you}): the list handed to you omits a transaction you can prove belongs in your own list, so the recommendation is detectably forged — you <b>reject</b> it. Censoring m${t.target+1} now requires actually bribing its assignees (the Input-CR cost).`
-      : `You aren't an assignee, but you can verify that ${assignees.join(', ')||'someone'} must include m${t.target+1}; once lists are published, an omission is public. Either way the adversary can no longer hide it and must pay the Input-CR bribe.`)+
-    ` In a plain MCP scheme no such public recomputation exists — which is precisely why the attack succeeds there and fails here.`;
+      ? `That includes <b>you</b> (P${t.you}) — the offer omits a transaction you can prove is yours, so it's detectably forged and you <b>reject</b>. Censoring now costs the full Input-CR bribe.`
+      : `You can verify ${assignees.join(', ')||'someone'} must include it; once lists are public, the omission is too. The adversary must pay the Input-CR bribe.`);
   box.style.display='block'; $('seatDefend').textContent="Hide ▾";
 }
 
